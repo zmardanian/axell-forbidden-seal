@@ -42,6 +42,7 @@ PASS  Germanium (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +36.0 
 PASS  every style, Best (8x): energy away from the harmonics (aliasing), 3 kHz at -12 dBFS +18 dB (worst style): -145.0 dB
 PASS  every style, Extreme (16x): the same, 7.5 kHz at -6 dBFS +24 dB (worst style): -94.0 dB
 PASS  AUTO: loudness (BS.1770 K-weighted) re the input, every style, DRIVE 0 / 15 / 30 dB (largest): -0.56 dB (g7d30)
+PASS  AUTO with INPUT +20 dB on a take 20 dB quieter: loudness re the take, every style (largest): -0.16 dB (q0)
 PASS  all 24 factory presets: finite, peak at most +12 dB over the input's: ok
 PASS  every preset sounds different from Init: ok
 PASS  2 bands, linear: magnitude response re one band, 50 Hz - 16 kHz (largest deviation): 0.066 dB
@@ -53,4 +54,4 @@ PASS  ESS GUARD 100 %: esses re vowels as in the input: +0.15 dB
 PASS  DYNAMICS +100: the loud part distorts more (3rd harmonic re 0): +4.2 dB
 PASS  DYNAMICS -100: the quiet part distorts more (3rd harmonic re 0): +14.5 dB
 
-ALL PASS: 54 of 54 independent checks passed (64 s)
+ALL PASS: 55 of 55 independent checks passed (68 s)

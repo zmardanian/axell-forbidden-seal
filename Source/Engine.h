@@ -1297,10 +1297,12 @@ private:
             const int s = bandStyle (b);
             stages[(size_t) b].setStyle (s, force);
             bandDb[(size_t) b] = driveDb + (activeBands > 1 ? std::clamp (p.bandDrive[(size_t) b], -18.0f, 18.0f) : 0.0f);
-            bandAutoDb[(size_t) b] = p.autoGain ? autoGainDb (s, bandDb[(size_t) b], p.character) : 0.0f;
+            // AUTO's table is "drive above the designed level": INPUT puts the take at that level, so the table is read
+            // at the drive alone and INPUT is taken back as a plain gain
+            bandAutoDb[(size_t) b] = p.autoGain ? autoGainDb (s, bandDb[(size_t) b] - inputDb, p.character) - inputDb : 0.0f;
             bandMixT[(size_t) b] = activeBands > 1 ? std::clamp (p.bandMix[(size_t) b], 0.0f, 100.0f) / 100.0f : 1.0f;
             // a guarded ess at the loudness the saturated signal has (AUTO: the input's; off: the drive's, measured)
-            bandCleanGain[(size_t) b] = p.autoGain ? 1.0f : (float) std::pow (10.0, -autoGainDb (s, bandDb[(size_t) b], p.character) / 20.0);
+            bandCleanGain[(size_t) b] = p.autoGain ? 1.0f : (float) std::pow (10.0, (inputDb - autoGainDb (s, bandDb[(size_t) b] - inputDb, p.character)) / 20.0);
         }
         autoOn = p.autoGain;
         dynK = std::clamp (p.dynamics, -100.0f, 100.0f) / 100.0f;
@@ -1430,7 +1432,7 @@ private:
                 const int s = stages[(size_t) b].getStyle();
                 const float compOff = autoOn ? off : 0.0f;
                 comp[(size_t) b][(size_t) i] = std::abs (compOff) > 1.0e-3f
-                                                   ? (float) std::pow (10.0, (autoGainDb (s, d + compOff, params.character) - autoGainDb (s, d, params.character)) / 20.0)
+                                                   ? (float) std::pow (10.0, (autoGainDb (s, d - inputDb + compOff, params.character) - autoGainDb (s, d - inputDb, params.character)) / 20.0)
                                                    : 1.0f;
             }
         }

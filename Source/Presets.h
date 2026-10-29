@@ -1,6 +1,6 @@
 #pragma once
 // Axell Forbidden Seal - factory presets (no plugin, product or trademark names). The "Vocal:" presets were tuned on
-// the artist's dry vocal at the designed level (-18 dBFS RMS: press LEARN first): the most colour that keeps the
+// the artist's dry vocal at the level LEARN sets (press LEARN first): the most colour that keeps the
 // predicted listener score (UTMOS) at the dry take's, the fundamental within 2 dB of it and the esses no harsher
 #include "Engine.h"
 
@@ -59,13 +59,13 @@ inline const std::vector<Preset>& factoryPresets()
     static const std::vector<Preset> list {
         { "Init", "A triode stage, gently driven.", Params {} },
         { "Vocal: Warm Tape", "Tape at a slow speed: thicker lows, rounded highs, esses tucked in.",
-          filters (make (kTape, 10.0f, 30.0f), 70.0f, 18000.0f) },
+          filters (make (kTape, 6.0f, 30.0f), 70.0f, 18000.0f) },
         { "Vocal: Tube Grit", "A cold triode pushed for grit and presence; the lows kept clean.",
-          filters (make (kTriode, 2.0f, 25.0f, 70.0f), 80.0f, 13000.0f, false, false, 15.0f) },
+          filters (make (kTriode, 2.0f, 25.0f, 50.0f), 80.0f, 13000.0f, false, false, 15.0f) },
         { "Vocal: Console Glue", "A console channel driven into its transformer: weight and density.",
-          filters (make (kConsole, 9.0f, 45.0f), 60.0f, 20000.0f) },
+          filters (make (kConsole, 6.0f, 45.0f), 60.0f, 20000.0f) },
         { "Vocal: Aggressive Lead", "Push-pull pentode: odd harmonics that cut through a dense beat.",
-          filters (make (kPentode, 6.0f, 40.0f, 100.0f), 80.0f, 11000.0f, false, false, 10.0f) },
+          filters (make (kPentode, 4.0f, 40.0f, 100.0f), 80.0f, 11000.0f, false, false, 10.0f) },
         { "Ad-libs: Telephone Crunch", "A starved germanium stage through a narrow band.",
           filters (make (kGermanium, 22.0f, 55.0f), 450.0f, 3800.0f, true, true) },
         { "Ad-libs: Folded FX", "A wavefolder blended in for a metallic, ring-like edge.",
@@ -92,11 +92,11 @@ inline const std::vector<Preset>& factoryPresets()
           filters (make (kDiode, 18.0f, 50.0f), 400.0f, 3000.0f, true, false, 20.0f) },
         // 2.0
         { "Vocal: Ess-Safe Grit", "A pushed triode with ESS GUARD: all the grit, none of the fizz on the esses.",
-          guard (filters (make (kTriode, 2.0f, 30.0f, 70.0f), 80.0f, 16000.0f), 100.0f) },
+          guard (filters (make (kTriode, 0.0f, 30.0f, 70.0f), 80.0f, 16000.0f), 100.0f) },
         { "Vocal: Split Warmth", "Three bands: tape on the lows, a triode on the mids, the highs barely touched; esses guarded.",
-          guard (split (make (kTriode, 4.0f, 40.0f), 3, 250.0f, 4000.0f, { kTape, -1, kConsole }, { 2.0f, 0.0f, -8.0f }, { 100.0f, 100.0f, 40.0f }), 80.0f) },
+          guard (split (make (kTriode, 6.0f, 40.0f, 50.0f), 3, 250.0f, 4000.0f, { kTape, -1, kConsole }, { 2.0f, 0.0f, -8.0f }, { 100.0f, 100.0f, 40.0f }), 80.0f) },
         { "Vocal: Loud Accents", "DYNAMICS on: the loud words bite harder, the soft ones stay smooth.",
-          dyn (filters (make (kPentode, 4.0f, 45.0f, 100.0f), 80.0f, 14000.0f), 70.0f) },
+          dyn (filters (make (kPentode, 1.0f, 45.0f, 100.0f), 80.0f, 14000.0f), 70.0f) },
         { "Vocal: Lift the Details", "DYNAMICS reversed: the quiet parts are thickened, the peaks spared.",
           dyn (make (kConsole, 6.0f, 50.0f), -70.0f) },
         { "808 + Top: Two-Band Grit", "The sub stays round (iron), everything above it gets the diode.",

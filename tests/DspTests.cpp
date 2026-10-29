@@ -284,6 +284,24 @@ static void testAutoGain (double fs)
         }
     check (std::string ("AUTO: loudness re the input, every style, DRIVE 0 - 30 dB (largest: ") + styleName (ws) + " +" + std::to_string (wd) + " dB)" + R (fs),
            worst, -0.75, 0.75, "dB");
+    // 3.0: a quiet take with INPUT at what LEARN sets: AUTO still keeps the take's own loudness
+    {
+        Buf q = x;
+        for (auto& c : q) for (auto& v : c) v *= 0.1f;   // 20 dB quieter
+        const double lq = loud (q[0], fs);
+        double w2 = 0;
+        int s2 = 0;
+        for (int s = 0; s < kNumStyles; ++s)
+            for (float d : { 0.0f, 12.0f })
+            {
+                Params p = style (s, d);
+                p.autoGain = true;
+                p.inputDb = 20.0f;
+                const double l = loud (render (fs, p, q)[0], fs) - lq;
+                if (std::abs (l) > std::abs (w2)) { w2 = l; s2 = s; }
+            }
+        check (std::string ("AUTO with INPUT +20 dB (a quiet take): loudness re the take, every style (largest: ") + styleName (s2) + ")" + R (fs), w2, -0.75, 0.75, "dB");
+    }
 }
 
 static void testAliasing (double fs)

@@ -171,6 +171,13 @@ out = run_all(runs, {r.name: x for r in runs}, jobname="auto")
 dev = [(kweighted_db(aligned(out[r.name], r.latency, len(x))[:, 0], fs) - l0, r.name) for r in runs]
 w = max(dev, key=lambda t: abs(t[0]))
 report("AUTO: loudness (BS.1770 K-weighted) re the input, every style, DRIVE 0 / 15 / 30 dB (largest)", abs(w[0]) < 0.75, f"{w[0]:+.2f} dB ({w[1]})")
+# a quiet take with INPUT raised (what LEARN does): AUTO keeps the take's own loudness
+xq = x * 0.1; lq = kweighted_db(xq[:, 0], fs)
+runs = [Run(f"q{s}", fs, sets={"Style": st, "Drive": "6", "Auto Gain": "On", "Input": "20"}) for s, st in enumerate(STYLES)]
+out = run_all(runs, {r.name: xq for r in runs}, jobname="autoinput")
+dev = [(kweighted_db(aligned(out[r.name], r.latency, len(xq))[:, 0], fs) - lq, r.name) for r in runs]
+w = max(dev, key=lambda t: abs(t[0]))
+report("AUTO with INPUT +20 dB on a take 20 dB quieter: loudness re the take, every style (largest)", abs(w[0]) < 0.75, f"{w[0]:+.2f} dB ({w[1]})")
 
 # ---------------------------------------------------------------- 5. every factory preset: finite, bounded
 names = ["Init", "Vocal: Warm Tape", "Vocal: Tube Grit", "Vocal: Console Glue", "Vocal: Aggressive Lead", "Ad-libs: Telephone Crunch",

@@ -86,3 +86,12 @@ colour that keeps UTMOS >= the dry take's - 0.03, the fundamental within 2 dB an
 higher (+0.3 dB): Tube Grit and Ess-Safe Grit +2 dB / 70 %, Aggressive Lead +6 dB, Split Warmth +4 dB, Loud Accents
 +4 dB, Lift the Details +6 dB. Without ESS GUARD the grit preset raised the esses 1.45 dB against their words, with it
 0.15 dB.
+
+## F13 - AUTO reads its table at DRIVE, INPUT is a plain gain (3.0.1)
+3.0.0 indexed AUTO's table with INPUT + DRIVE. The table is measured as "drive above the designed level"; INPUT's job
+is to bring the take to that level, so the circuit sees DRIVE above it - with LEARN's +17.9 dB on the artist's take
+the table assumed a circuit driven 18 dB harder and over-compensated (~5 dB too loud). The suites ran with INPUT 0 and
+missed it; both now test a take 20 dB quiet with INPUT +20 dB (DSP 0.1 dB, audit 0.16 dB). The vocal presets were
+retuned at the level LEARN actually sets (3.0.0 tuned them 3 dB lower: summed-channel loudness instead of the
+channels' mean): Tube Grit +2 / 50 %, Ess-Safe Grit 0 / 70 %, Warm Tape +6, Console Glue +6, Aggressive Lead +4, Split
+Warmth +6 / 50 %, Loud Accents +1, Lift the Details +6 - UTMOS 2.020 - 2.064 vs the dry take's 2.043.

@@ -73,15 +73,15 @@ guard pushed the esses up 1.45 dB against their words; with the guard, 0.15 dB.
 for the host before a new latency plays). MIX 0 and host bypass give the input delayed by it, bit for bit.
 **CPU** (stereo, 48 kHz, Best 8x, 128-sample blocks): 2.9 - 6.5 % of one core per style; three bands + ESS GUARD 13 %.
 
-**Verified for 3.0.0**: DSP 181, plugin 32, ASan + UBSan clean, independent audit 54/54, pluginval strictness 10 (also with the plugin built with AddressSanitizer: clean), Steinberg's VST3 validator 47/47.
+**Verified for 3.0.1**: DSP 184, plugin 32, ASan + UBSan clean, independent audit 55/55, pluginval strictness 10 (also with the plugin built with AddressSanitizer: clean), Steinberg's VST3 validator 47/47.
 
 ## Install (Linux)
 
-Download `AxellForbiddenSeal-3.0.0-linux-x86_64.tar.gz` from the
+Download `AxellForbiddenSeal-3.0.1-linux-x86_64.tar.gz` from the
 [latest release](https://github.com/zmardanian/axell-forbidden-seal/releases/latest) (optional: `sha256sum -c SHA256SUMS.txt`), then:
 
-    tar xzf AxellForbiddenSeal-3.0.0-linux-x86_64.tar.gz
-    cd AxellForbiddenSeal-3.0.0-linux-x86_64
+    tar xzf AxellForbiddenSeal-3.0.1-linux-x86_64.tar.gz
+    cd AxellForbiddenSeal-3.0.1-linux-x86_64
     ./install.sh
 
 Then in REAPER: Options > Preferences > Plug-ins > VST > Re-scan. On a vocal: press LEARN while the take plays, pick a

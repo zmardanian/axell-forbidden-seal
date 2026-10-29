@@ -37,6 +37,7 @@ static void setKey (afs::Params& p, const std::string& k, double v, int& block)
     else if (k.size() == 5 && k.rfind ("b", 0) == 0 && k.substr (2) == "mix") p.bandMix[(size_t) (k[1] - '1')] = (float) v;
     else if (k == "dyn") p.dynamics = (float) v;
     else if (k == "essguard") p.essGuard = (float) v;
+    else if (k == "input") p.inputDb = (float) v;
     else if (k == "block") block = (int) v;
     else std::fprintf (stderr, "unknown key %s\n", k.c_str());
 }

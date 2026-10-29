@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(AxellForbiddenSeal VERSION 3.0.0)
+project(AxellForbiddenSeal VERSION 3.0.1)
 # the version for the GUI (every target: the plugin, tests and tools draw the same header)
 add_compile_definitions(AXELL_VERSION_STRING="${PROJECT_VERSION}")
 

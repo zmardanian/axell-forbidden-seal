@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.0.1 - 2026-10-29
+- **Fixed: AUTO with INPUT.** 3.0.0 read AUTO's table at INPUT + DRIVE; the table means "drive above the designed
+  level", and INPUT puts the take at that level - so with LEARN's INPUT the output came out several dB too loud
+  (about 5 dB on a quiet take). Now the table is read at DRIVE and INPUT is taken back as a plain gain: a take 20 dB
+  quiet with INPUT +20 dB keeps its own loudness within 0.2 dB in every style (new tests, DSP and audit).
+- **The vocal presets retuned at the level LEARN sets** (3.0.0's were tuned 3 dB lower), all eight: on the artist's
+  dry vocal every one keeps the predicted listener score at the dry take's (2.020 - 2.064 vs 2.043), the fundamental
+  within 2 dB, the esses no harsher.
+- Verified: DSP 184, plugin 32, ASan + UBSan clean, independent audit 55/55, pluginval strictness 10, VST3 validator 47/47.
+
 ## 3.0.0 - 2026-10-29 - first public release
 - **INPUT + LEARN**: LEARN plays your take for 6 seconds and sets INPUT so it sits at the level every style and
   preset is designed for (a voice at -18 dBFS RMS) - a saturator reacts to level like the hardware, and a quiet take

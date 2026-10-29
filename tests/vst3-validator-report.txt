@@ -15,7 +15,7 @@
 	name = Axell Forbidden Seal
 	category = Audio Module Class
 	subCategories = Fx|Distortion
-	version = 3.0.0
+	version = 3.0.1
 	sdkVersion = VST 3.8.0
 	cid = ABCDEF019182FAEB4178796246736C31
 
@@ -23,7 +23,7 @@
 	name = Axell Forbidden Seal
 	category = Component Controller Class
 	subCategories = Fx|Distortion
-	version = 3.0.0
+	version = 3.0.1
 	sdkVersion = VST 3.8.0
 	cid = ABCDEF011234ABCD4178796246736C31
 

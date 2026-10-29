@@ -8,6 +8,7 @@ PASS  MIX 0 %, quality 4: the input delayed by the reported latency (4), max err
 PASS  LIVE: latency (samples) @ 48.0 kHz                                                                        4.0000   [1 .. 8]
 PASS  host bypass: the input delayed by the latency, bit for bit (after 10 ms) @ 48.0 kHz                       0.0000   [0 .. 0]
 PASS  AUTO: loudness re the input, every style, DRIVE 0 - 30 dB (largest: PENTODE +30 dB) @ 48.0 kHz            0.4081 dB  [-0.75 .. 0.75]
+PASS  AUTO with INPUT +20 dB (a quiet take): loudness re the take, every style (largest: FOLD) @ 48.0 kHz       0.1051 dB  [-0.75 .. 0.75]
 PASS  TAPE, Best (8x): stray energy (aliasing), 7.5 kHz at -6 dBFS +24 dB @ 48.0 kHz                          -62.5200 dB  [-400 .. -55]
 PASS  TAPE, Extreme (16x): the same @ 48.0 kHz                                                               -113.7062 dB  [-400 .. -90]
 PASS  TRIODE, Best (8x): stray energy (aliasing), 7.5 kHz at -6 dBFS +24 dB @ 48.0 kHz                        -87.3251 dB  [-400 .. -60]
@@ -53,7 +54,7 @@ PASS  ESS GUARD 100 %: the esses' distortion (residual re the input) re ESS GUAR
 PASS  DYNAMICS +100: the loud part distorts more (3rd harmonic, re 0) @ 48.0 kHz                                4.2013 dB  [3 .. 400]
 PASS  DYNAMICS -100: the quiet part distorts more (3rd harmonic, re 0) @ 48.0 kHz                              14.8499 dB  [3 .. 400]
 PASS  no memory allocation in process() (every preset, random blocks)                                           0.0000 allocs  [0 .. 0]
-ALL PASS: 55 of 55 checks passed (134.1 s)
+ALL PASS: 56 of 56 checks passed (143.4 s)
 PASS  parameter count = 29
 PASS  every parameter in its frozen place, version hint 1 (1.0) / 2 (2.0) / 3 (3.0)
 PASS  defaults = the engine's defaults (= the Init preset), QUALITY Best (8x)
