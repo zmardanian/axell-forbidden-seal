@@ -1,0 +1,56 @@
+PASS  silence in -> silence out, every style at +44 dB drive @ 44100: peak 0
+PASS  MIX 0 %, Eco (2x): output = input delayed by the reported latency (71) @ 44100: max error 0
+PASS  MIX 0 %, Good (4x): output = input delayed by the reported latency (79) @ 44100: max error 0
+PASS  MIX 0 %, Best (8x): output = input delayed by the reported latency (82) @ 44100: max error 0
+PASS  MIX 0 %, Extreme (16x): output = input delayed by the reported latency (83) @ 44100: max error 0
+PASS  MIX 0 %, Live (4x): output = input delayed by the reported latency (4) @ 44100: max error 0
+PASS  latency grows with QUALITY (Eco .. Extreme) @ 44100: [71, 79, 82, 83] samples
+PASS  LIVE: latency of a few samples @ 44100: 4 samples
+PASS  host bypass: output = input delayed by the latency @ 44100: max error 0
+PASS  silence in -> silence out, every style at +44 dB drive @ 48000: peak 0
+PASS  MIX 0 %, Eco (2x): output = input delayed by the reported latency (71) @ 48000: max error 0
+PASS  MIX 0 %, Good (4x): output = input delayed by the reported latency (79) @ 48000: max error 0
+PASS  MIX 0 %, Best (8x): output = input delayed by the reported latency (82) @ 48000: max error 0
+PASS  MIX 0 %, Extreme (16x): output = input delayed by the reported latency (83) @ 48000: max error 0
+PASS  MIX 0 %, Live (4x): output = input delayed by the reported latency (4) @ 48000: max error 0
+PASS  latency grows with QUALITY (Eco .. Extreme) @ 48000: [71, 79, 82, 83] samples
+PASS  LIVE: latency of a few samples @ 48000: 4 samples
+PASS  host bypass: output = input delayed by the latency @ 48000: max error 0
+PASS  silence in -> silence out, every style at +44 dB drive @ 96000: peak 0
+PASS  MIX 0 %, Eco (2x): output = input delayed by the reported latency (25) @ 96000: max error 0
+PASS  MIX 0 %, Good (4x): output = input delayed by the reported latency (33) @ 96000: max error 0
+PASS  MIX 0 %, Best (8x): output = input delayed by the reported latency (36) @ 96000: max error 0
+PASS  MIX 0 %, Extreme (16x): output = input delayed by the reported latency (37) @ 96000: max error 0
+PASS  MIX 0 %, Live (4x): output = input delayed by the reported latency (3) @ 96000: max error 0
+PASS  latency grows with QUALITY (Eco .. Extreme) @ 96000: [25, 33, 36, 37] samples
+PASS  LIVE: latency of a few samples @ 96000: 3 samples
+PASS  host bypass: output = input delayed by the latency @ 96000: max error 0
+PASS  blocks of 512 vs random 1-4096 samples: the same output (every filter on): max difference 0
+PASS  mono track (1 in / 1 out), 700-sample blocks: finite, the effect present: peak 0.364
+PASS  every style, Eco (2x): small-signal gain at 1 kHz (largest deviation): 0.012 dB
+PASS  every style, Good (4x): small-signal gain at 1 kHz (largest deviation): 0.023 dB
+PASS  every style, Best (8x): small-signal gain at 1 kHz (largest deviation): 0.039 dB
+PASS  every style, Extreme (16x): small-signal gain at 1 kHz (largest deviation): 0.050 dB
+PASS  every style, Live (4x): small-signal gain at 1 kHz (largest deviation): 0.013 dB
+PASS  Tape (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -203.0 dB
+PASS  Pentode (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -201.4 dB
+PASS  Iron (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -148.7 dB
+PASS  Fold (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -193.5 dB
+PASS  Triode (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +22.7 dB
+PASS  Console (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +26.7 dB
+PASS  Germanium (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +36.0 dB
+PASS  every style, Best (8x): energy away from the harmonics (aliasing), 3 kHz at -12 dBFS +18 dB (worst style): -145.0 dB
+PASS  every style, Extreme (16x): the same, 7.5 kHz at -6 dBFS +24 dB (worst style): -94.0 dB
+PASS  AUTO: loudness (BS.1770 K-weighted) re the input, every style, DRIVE 0 / 15 / 30 dB (largest): -0.56 dB (g7d30)
+PASS  all 24 factory presets: finite, peak at most +12 dB over the input's: ok
+PASS  every preset sounds different from Init: ok
+PASS  2 bands, linear: magnitude response re one band, 50 Hz - 16 kHz (largest deviation): 0.066 dB
+PASS  3 bands, linear: magnitude response re one band, 50 Hz - 16 kHz (largest deviation): 0.071 dB
+PASS  ESS GUARD on: latency + the ess look-ahead: 82 -> 466 samples
+PASS  ESS GUARD 100 % (the real network): the esses' distortion re off: -59.6 dB
+PASS  ESS GUARD: the vowels (re off): +0.00 dB
+PASS  ESS GUARD 100 %: esses re vowels as in the input: +0.15 dB
+PASS  DYNAMICS +100: the loud part distorts more (3rd harmonic re 0): +4.2 dB
+PASS  DYNAMICS -100: the quiet part distorts more (3rd harmonic re 0): +14.5 dB
+
+ALL PASS: 54 of 54 independent checks passed (64 s)
