@@ -89,6 +89,9 @@ APVTS::ParameterLayout SealProcessor::createLayout()
                                                          fmt ([] (float v) { return v < 0.05f ? juce::String ("Off") : pctText (v); })));
     // 3.0 (appended)
     p.push_back (std::make_unique<AudioParameterFloat> (ParameterID { "input", 3 }, "Input", NormalisableRange<float> (-24.0f, 24.0f, 0.1f), d.inputDb, fmt (dbText)));
+    // 4.0 (appended): where the colour lands, and the seal's tone
+    p.push_back (std::make_unique<AudioParameterFloat> (ParameterID { "focus", 4 }, "Focus", NormalisableRange<float> (0.0f, 100.0f, 0.1f), d.focus, fmt (pctText)));
+    p.push_back (std::make_unique<AudioParameterBool> (ParameterID { "voicing", 4 }, "Voicing", d.voicing));
     return { p.begin(), p.end() };
 }
 
@@ -132,6 +135,8 @@ afs::Params SealProcessor::readParams() const
     p.dynamics = v ("dynamics");
     p.essGuard = v ("essGuard");
     p.inputDb = v ("input");
+    p.focus = v ("focus");
+    p.voicing = v ("voicing") > 0.5f;
     return p;
 }
 
@@ -169,6 +174,8 @@ void SealProcessor::writeParams (const afs::Params& p)
     }
     set ("dynamics", p.dynamics);
     set ("essGuard", p.essGuard);
+    set ("focus", p.focus);
+    set ("voicing", p.voicing ? 1.0f : 0.0f);
     // INPUT is not part of a preset either: it belongs to the take (LEARN sets it)
     // QUALITY is not part of a preset: a preset never changes the latency of a session
 }

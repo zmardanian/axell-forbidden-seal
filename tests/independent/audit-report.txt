@@ -26,32 +26,42 @@ PASS  latency grows with QUALITY (Eco .. Extreme) @ 96000: [25, 33, 36, 37] samp
 PASS  LIVE: latency of a few samples @ 96000: 3 samples
 PASS  host bypass: output = input delayed by the latency @ 96000: max error 0
 PASS  blocks of 512 vs random 1-4096 samples: the same output (every filter on): max difference 0
-PASS  mono track (1 in / 1 out), 700-sample blocks: finite, the effect present: peak 0.364
-PASS  every style, Eco (2x): small-signal gain at 1 kHz (largest deviation): 0.012 dB
-PASS  every style, Good (4x): small-signal gain at 1 kHz (largest deviation): 0.023 dB
-PASS  every style, Best (8x): small-signal gain at 1 kHz (largest deviation): 0.039 dB
-PASS  every style, Extreme (16x): small-signal gain at 1 kHz (largest deviation): 0.050 dB
-PASS  every style, Live (4x): small-signal gain at 1 kHz (largest deviation): 0.013 dB
-PASS  Tape (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -203.0 dB
-PASS  Pentode (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -201.4 dB
-PASS  Iron (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -148.7 dB
-PASS  Fold (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -193.5 dB
-PASS  Triode (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +22.7 dB
-PASS  Console (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +26.7 dB
-PASS  Germanium (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +36.0 dB
-PASS  every style, Best (8x): energy away from the harmonics (aliasing), 3 kHz at -12 dBFS +18 dB (worst style): -145.0 dB
-PASS  every style, Extreme (16x): the same, 7.5 kHz at -6 dBFS +24 dB (worst style): -94.0 dB
-PASS  AUTO: loudness (BS.1770 K-weighted) re the input, every style, DRIVE 0 / 15 / 30 dB (largest): -0.56 dB (g7d30)
-PASS  AUTO with INPUT +20 dB on a take 20 dB quieter: loudness re the take, every style (largest): -0.16 dB (q0)
+PASS  mono track (1 in / 1 out), 700-sample blocks: finite, the effect present: peak 0.694
+PASS  every style, Eco (2x): small-signal gain at 1 kHz (largest deviation): 0.003 dB
+PASS  every style, Good (4x): small-signal gain at 1 kHz (largest deviation): 0.013 dB
+PASS  every style, Best (8x): small-signal gain at 1 kHz (largest deviation): 0.030 dB
+PASS  every style, Extreme (16x): small-signal gain at 1 kHz (largest deviation): 0.041 dB
+PASS  every style, Live (4x): small-signal gain at 1 kHz (largest deviation): 0.003 dB
+PASS  Tape (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -204.7 dB
+PASS  Pentode (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -203.6 dB
+PASS  Iron (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -157.0 dB
+PASS  Fold (symmetric circuit): 2nd harmonic at +24 dB re the fundamental: -167.3 dB
+PASS  Triode (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +16.3 dB
+PASS  Console (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +19.7 dB
+PASS  Germanium (single-ended): 2nd re 3rd harmonic at +6 dB (even-rich): +30.5 dB
+PASS  every style, Best (8x): energy away from the harmonics (aliasing), 3 kHz at -12 dBFS +18 dB (worst style): -151.1 dB
+PASS  every style, Extreme (16x): the same, 7.5 kHz at -6 dBFS +24 dB (worst style): -128.6 dB
+PASS  AUTO: loudness (BS.1770 K-weighted) re the input, every style, DRIVE 0 / 15 / 30 dB (largest): +0.31 dB (g4d30)
+PASS  AUTO with INPUT +20 dB on a take 20 dB quieter: loudness re the take, every style (largest): +0.09 dB (q7)
 PASS  all 24 factory presets: finite, peak at most +12 dB over the input's: ok
 PASS  every preset sounds different from Init: ok
-PASS  2 bands, linear: magnitude response re one band, 50 Hz - 16 kHz (largest deviation): 0.066 dB
-PASS  3 bands, linear: magnitude response re one band, 50 Hz - 16 kHz (largest deviation): 0.071 dB
-PASS  ESS GUARD on: latency + the ess look-ahead: 82 -> 466 samples
-PASS  ESS GUARD 100 % (the real network): the esses' distortion re off: -59.6 dB
-PASS  ESS GUARD: the vowels (re off): +0.00 dB
-PASS  ESS GUARD 100 %: esses re vowels as in the input: +0.15 dB
+PASS  2 bands, linear: magnitude response re one band, 50 Hz - 16 kHz (largest deviation): 0.065 dB
+PASS  3 bands, linear: magnitude response re one band, 50 Hz - 16 kHz (largest deviation): 0.070 dB
+PASS  ESS GUARD on: latency + the ess look-ahead: 82 -> 658 samples
+      esses' residue re the input: guard off -19.6 dB, on -137.2 dB; vowels' residue: off -26.5, on -27.0
+PASS  ESS GUARD 100 % (the real network): the esses' distortion re off: -117.6 dB
+      vowels re the input (AUTO on): guard off +0.78 dB, on +0.08 dB
+PASS  ESS GUARD on: the vowels keep the input's loudness (AUTO measures them alone): +0.08 dB (guard off: +0.78 dB - AUTO hears the saturated esses too)
+PASS  ESS GUARD 100 %: esses re vowels as in the input: -0.08 dB
 PASS  DYNAMICS +100: the loud part distorts more (3rd harmonic re 0): +4.2 dB
-PASS  DYNAMICS -100: the quiet part distorts more (3rd harmonic re 0): +14.5 dB
+PASS  DYNAMICS -100: the quiet part distorts more (3rd harmonic re 0): +14.4 dB
+PASS  VOICING at 60 Hz (re off): +1.83 dB
+PASS  VOICING at 1200 Hz (re off): -1.50 dB
+PASS  VOICING at 4000 Hz (re off): -0.25 dB
+PASS  VOICING at 15000 Hz (re off): +0.83 dB
+PASS  FOCUS 100: 400 Hz's 3rd harmonic (1.2 kHz, the box) re its 8th (3.2 kHz, the bite), re FOCUS 0: -14.5 dB
+PASS  the voice untouched: a voice 60 dB down, every style, out - in (largest): -61.0 dB (vu2)
+PASS  a steady vowel: a steady output, 20 ms frames, full band (largest): 0.001 dB (stg)
+PASS  a steady vowel: a steady output, 20 ms frames above 6 kHz (largest): 0.001 dB (stg)
 
-ALL PASS: 55 of 55 independent checks passed (68 s)
+ALL PASS: 63 of 63 independent checks passed (80 s)

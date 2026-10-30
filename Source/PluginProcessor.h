@@ -56,6 +56,7 @@ public:
     // LEARN: listen to the take for 6 s, then set INPUT
     void startLearn() noexcept { dsp.startLearn(); }
     bool learningNow() const noexcept { return dsp.learningNow(); }
+    float dynamicsNow() const noexcept { return dsp.dynamicsNow(); }
     juce::String learnedText;   // message thread
 
 private:

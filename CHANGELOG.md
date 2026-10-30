@@ -1,5 +1,46 @@
 # Changelog
 
+## 4.0.0 - 2026-10-30
+A new engine and a new face, after the artist heard 3.0.1 on their own vocal and judged it boxy, harsh and glitchy -
+and measurement confirmed why.
+
+**Decoupled saturation (a new engine).** Every circuit now gives only what it *adds* (its output minus its own
+small-signal response); the voice itself never passes a circuit, so its highs and mids stay exactly as recorded.
+- What it adds is split, in real time, into **squash** (the part that is a gain of the voice - Bussgang: for a memoryless
+  circuit one gain for every frequency) and **new harmonics**. The squash is applied evenly over the voice (its tone is
+  kept); the harmonics are placed on purpose.
+- **FOCUS** (new): where the harmonics land - out of the vowels' 1 - 1.5 kHz (the box) and softened above 7 kHz (the
+  fizz), the weight voiced per circuit and per drive, a measured share of the squash. FOCUS 0 = the classic circuit.
+- **VOICING** (new): the seal's tone - a touch of weight, the honk range eased, a breath of air. Off: the voice exactly as it
+  came in.
+- Every FOCUS shape was found on the artist's own vocal against a respected commercial tape-machine emulation at both its
+  speeds, compared at **equal squash**: box below the reference's at 61 of 64 points, air within its window at 61, fizz below at 56, honk below at 56, no mud at 63; the predicted listener score (UTMOS) matches the reference's at every tested point (within 0.03). The harmonics' level is set exactly there: at equal squash 4.0 adds less low and bite grit than the reference (weight above it at 2 of 64 points, bite at 28) - more grit is a DRIVE or FOCUS turn away.
+- Against 3.0.1 at equal squash, on the artist's vocal: less box, more air, less fizz, less honk at every circuit;
+  less grit per squash (cleaner), and the level moves a little more (the squash now spans the whole voice evenly).
+- **Saved 3.x sessions sound different on purpose** (the new engine; FOCUS and VOICING take their defaults): FOCUS 0 with
+  VOICING off is the closest to the classic circuit.
+- The circuits' internal filters (gap loss, output filters) shaped the voice in 3.x and dulled the top by up to 1.3 dB:
+  they now shape only the colour.
+
+**ESS GUARD.** The colour fades out over each ess instead of a 1 ms swap between two different signals; the guard
+starts 4 ms before the ess (latency 12 ms while on); a guarded ess keeps exactly the vowels' loudness change. Guarded esses
+carry 50 - 55 dB less distortion than the input with forced decisions (3.x: 26 - 42); with the real network on an
+independent voice, -137 dB of residue; AUTO now measures the vowels alone (they keep the input's loudness within 0.08 dB).
+
+**Glitches.** New tests: a steady vowel gives a steady output (every circuit, AUTO, DYNAMICS, ESS GUARD, LIVE:
+0.0006 dB in frames of whole periods); ESS GUARD switching every 50 ms adds nothing to the highs.
+
+**Presets.** The vocal presets are pure (no filters on the voice), each one's DRIVE solved on the artist's vocal for its
+amount of squash; the effect presets keep the classic circuit.
+
+**Interface.** Smaller (660 x 350 at 100 %) and new: DRIVE is a katana drawn out of its scabbard - the blade heats with
+the drive and its temper line ripples with HEAT, DYNAMICS moves on its back; every other control is a brush ensō that
+closes with its value; switches are hanko seals; Miyamoto Musashi's painting seal 二天 (Niten) stamped over 禁, glowing with
+HEAT; the sections named after his five rings (地 水 火 風 空); washi paper, ink mountains. All drawn in code.
+
+- Verified: DSP 220, plugin 32, ASan + UBSan clean, independent audit 63/63, core 143, pluginval strictness 10,
+  VST3 validator 47/47.
+
 ## 3.0.1 - 2026-10-29
 - **Fixed: AUTO with INPUT.** 3.0.0 read AUTO's table at INPUT + DRIVE; the table means "drive above the designed
   level", and INPUT puts the take at that level - so with LEARN's INPUT the output came out several dB too loud

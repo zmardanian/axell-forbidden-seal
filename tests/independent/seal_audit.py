@@ -136,7 +136,7 @@ report("mono track (1 in / 1 out), 700-sample blocks: finite, the effect present
 
 # ---------------------------------------------------------------- 2. small-signal gain, harmonic signatures
 for q in range(5):
-    runs = [Run(f"lin{s}", fs, sets={"Style": st, "Drive": "0", "Auto Gain": "Off", "Quality": QUAL[q]}) for s, st in enumerate(STYLES)]
+    runs = [Run(f"lin{s}", fs, sets={"Style": st, "Drive": "0", "Auto Gain": "Off", "Voicing": "Off", "Quality": QUAL[q]}) for s, st in enumerate(STYLES)]
     x = sine(fs, 1000, -50, 0.6)
     out = run_all(runs, {r.name: x for r in runs}, jobname=f"lin{q}")
     worst = max(abs(db(harm(aligned(out[r.name], r.latency, len(x))[:, 0], fs, 1000, 1) / 10 ** (-50 / 20))) for r in runs)
@@ -243,7 +243,7 @@ def ess_voice(fs, secs, seed=11):
     x = x / np.max(np.abs(x)) * 10 ** (-12 / 20)
     return f32(np.stack([x, x], 1)), vowels, esses
 x, vowels, esses = ess_voice(fs, 9.0)
-base = {"Style": "Triode", "Drive": "20", "Auto Gain": "On"}
+base = {"Style": "Triode", "Drive": "20", "Auto Gain": "On", "Voicing": "Off"}   # the guard measured without the tone
 runs = [Run("g0", fs, sets=base), Run("g1", fs, sets={**base, "Ess Guard": "100"})]
 out = run_all(runs, {"g0": x, "g1": x}, jobname="guard")
 report("ESS GUARD on: latency + the ess look-ahead", runs[1].latency - runs[0].latency > 300, f"{runs[0].latency} -> {runs[1].latency} samples")
@@ -260,23 +260,70 @@ def residual(y, segs):
         d = y[a:b] - gm * x[a:b, 0]; num += np.dot(d, d)
     return 10 * np.log10(num / den / gm ** 2)
 d = residual(y1, esses) - residual(y0, esses)
+print(f"      esses' residue re the input: guard off {residual(y0, esses):+.1f} dB, on {residual(y1, esses):+.1f} dB; vowels' residue: off {residual(y0, vowels):+.1f}, on {residual(y1, vowels):+.1f}")
 report("ESS GUARD 100 % (the real network): the esses' distortion re off", d < -10, f"{d:+.1f} dB")
 def seg_db(y, segs):
     return 10 * np.log10(sum(np.dot(y[a:b], y[a:b]) for a, b in segs if a >= skip))
 dv = seg_db(y1, vowels) - seg_db(y0, vowels)
-report("ESS GUARD: the vowels (re off)", abs(dv) < 0.3, f"{dv:+.2f} dB")
+print(f"      vowels re the input (AUTO on): guard off {seg_db(y0, vowels) - seg_db(x[:, 0], vowels):+.2f} dB, on {seg_db(y1, vowels) - seg_db(x[:, 0], vowels):+.2f} dB")
+von = seg_db(y1, vowels) - seg_db(x[:, 0], vowels)
+report("ESS GUARD on: the vowels keep the input's loudness (AUTO measures them alone)", abs(von) < 0.3, f"{von:+.2f} dB (guard off: {seg_db(y0, vowels) - seg_db(x[:, 0], vowels):+.2f} dB - AUTO hears the saturated esses too)")
 bal = (seg_db(y1, esses) - seg_db(y1, vowels)) - (seg_db(x[:, 0], esses) - seg_db(x[:, 0], vowels))
 report("ESS GUARD 100 %: esses re vowels as in the input", abs(bal) < 1.5, f"{bal:+.2f} dB")
 # DYNAMICS: a tone stepping between -30 and -6 dBFS
 t = np.arange(int(2 * fs)) / fs
 step = f32(np.stack([np.where(t % 1.0 < 0.5, 10 ** (-30 / 20), 10 ** (-6 / 20)) * np.sin(2 * np.pi * 500 * t)] * 2, 1))
-runs = [Run(f"dy{v}", fs, sets={"Style": "Tape", "Drive": "12", "Auto Gain": "Off", "Dynamics": str(v)}) for v in (-100, 0, 100)]
+runs = [Run(f"dy{v}", fs, sets={"Style": "Tape", "Drive": "12", "Auto Gain": "Off", "Focus": "0", "Dynamics": str(v)}) for v in (-100, 0, 100)]
 out = run_all(runs, {r.name: step for r in runs}, jobname="dyn")
 def h3(r, t0):
     y = aligned(out[r.name], r.latency, len(step))[int(t0 * fs):int((t0 + 0.4) * fs), 0]
     return db(harm(y, fs, 500, 3) / harm(y, fs, 500, 1))
 report("DYNAMICS +100: the loud part distorts more (3rd harmonic re 0)", h3(runs[2], 1.55) - h3(runs[1], 1.55) > 3, f"{h3(runs[2], 1.55) - h3(runs[1], 1.55):+.1f} dB")
 report("DYNAMICS -100: the quiet part distorts more (3rd harmonic re 0)", h3(runs[0], 1.05) - h3(runs[1], 1.05) > 3, f"{h3(runs[0], 1.05) - h3(runs[1], 1.05):+.1f} dB")
+
+# ---------------------------------------------------------------- 4.0: the decoupled engine, through the real host
+# VOICING: weight, the honk range eased, presence near flat, a breath of air (small signal, Voicing On re Off)
+vf = {60: (1.3, 2.0), 1200: (-1.65, -1.3), 4000: (-0.6, 0.3), 15000: (0.5, 1.1)}
+runs = [Run(f"vo{f}_{v}", fs, sets={"Style": "Triode", "Drive": "0", "Auto Gain": "Off", "Voicing": v}) for f in vf for v in ("On", "Off")]
+ins = {r.name: sine(fs, int(r.name[2:].split("_")[0]), -60, 0.6) for r in runs}
+out = run_all(runs, ins, jobname="voicing")
+for f, (lo, hi) in vf.items():
+    a, b = [harm(aligned(out[f"vo{f}_{v}"], next(r for r in runs if r.name == f"vo{f}_{v}").latency, len(ins[f"vo{f}_{v}"]))[:, 0], fs, f, 1) for v in ("On", "Off")]
+    d = db(a / b); report(f"VOICING at {f} Hz (re off)", lo <= d <= hi, f"{d:+.2f} dB")
+# FOCUS: a tone's harmonics are all new colour - the 3rd of 400 Hz (1.2 kHz, the box) far down, the 8th (3.2 kHz, the bite) kept
+runs = [Run(f"fo{v}", fs, sets={"Style": "Triode", "Drive": "12", "Auto Gain": "Off", "Focus": v}) for v in ("0", "100")]
+x = sine(fs, 400, -18, 0.6)
+out = run_all(runs, {r.name: x for r in runs}, jobname="focus")
+def hk(r, k):
+    y = aligned(out[r.name], r.latency, len(x))[:, 0]; return db(harm(y, fs, 400, k) / harm(y, fs, 400, 1))
+# placement (FOCUS also sets the harmonics' overall level, per circuit): the box harmonic re the bite harmonic
+pl = (hk(runs[1], 3) - hk(runs[0], 3)) - (hk(runs[1], 8) - hk(runs[0], 8))
+report("FOCUS 100: 400 Hz's 3rd harmonic (1.2 kHz, the box) re its 8th (3.2 kHz, the bite), re FOCUS 0", pl < -10, f"{pl:+.1f} dB")
+# the voice untouched: a voice 60 dB down through every style at DRIVE 0, VOICING off: out - in
+xq = voice(fs, 2.5) * 1e-3
+runs = [Run(f"vu{s}", fs, sets={"Style": st, "Drive": "0", "Auto Gain": "Off", "Voicing": "Off"}) for s, st in enumerate(STYLES)]
+out = run_all(runs, {r.name: xq for r in runs}, jobname="untouched")
+def untouched(r):
+    y = aligned(out[r.name], r.latency, len(xq))[:, 0]; m = min(len(y), len(xq)); a = int(0.3 * fs)
+    return 10 * np.log10(np.sum((y[a:m] - xq[a:m, 0]) ** 2) / np.sum(xq[a:m, 0] ** 2))
+worst = max((untouched(r), r.name) for r in runs)
+report("the voice untouched: a voice 60 dB down, every style, out - in (largest)", worst[0] < -50, f"{worst[0]:.1f} dB ({worst[1]})")
+# a steady vowel in, a steady output: frames of whole periods (150 Hz, 20 ms), full band and above 6 kHz, every style at
+# DRIVE 18 with AUTO and VOICING on, and with ESS GUARD (the real network listening)
+tt = np.arange(int(6 * fs)) / fs
+sv = sum((np.exp(-((150 * h - 700) / 400) ** 2) + 0.5 * np.exp(-((150 * h - 2500) / 900) ** 2) + 0.05) / h * np.sin(2 * np.pi * 150 * h * tt + 0.7 * h * h)
+         for h in range(1, 41) if 150 * h < 0.45 * fs)
+sv *= 10 ** (-18 / 20) / np.sqrt(np.mean(sv ** 2)); sv = f32(np.stack([sv, sv], 1))
+runs = [Run(f"st{s}", fs, sets={"Style": st, "Drive": "18"}) for s, st in enumerate(STYLES)]
+runs += [Run("stg", fs, sets={"Style": "Triode", "Drive": "18", "Ess Guard": "100"})]
+out = run_all(runs, {r.name: sv for r in runs}, jobname="steady")
+def spread(y, lo, hi):
+    sos = sg.butter(4, [lo, min(hi, 0.45 * fs)], "band", fs=fs, output="sos"); z = sg.sosfilt(sos, y); fr = int(0.02 * fs)
+    e = [10 * np.log10(np.mean(z[a:a + fr] ** 2) + 1e-30) for a in range(int(3.5 * fs), int(5.5 * fs) - fr, fr)]
+    return max(e) - min(e)
+wf = max((spread(out[r.name][:, 0], 30, 20000), r.name) for r in runs); wh = max((spread(out[r.name][:, 0], 6000, 16000), r.name) for r in runs)
+report("a steady vowel: a steady output, 20 ms frames, full band (largest)", wf[0] < 0.25, f"{wf[0]:.3f} dB ({wf[1]})")
+report("a steady vowel: a steady output, 20 ms frames above 6 kHz (largest)", wh[0] < 0.25, f"{wh[0]:.3f} dB ({wh[1]})")
 
 fails = sum(1 for _, ok, _ in results if not ok)
 print(f"\n{'ALL PASS' if fails == 0 else 'FAILURES'}: {len(results) - fails} of {len(results)} independent checks passed ({time.time() - START:.0f} s)")

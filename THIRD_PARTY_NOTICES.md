@@ -943,3 +943,12 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
+
+## 4.0 references
+- J. J. Bussgang, "Crosscorrelation functions of amplitude-distorted Gaussian signals", MIT Research Laboratory of
+  Electronics, Technical Report 216 (1952) - the squash / harmonics split (a memoryless nonlinearity's output = a gain of
+  its input + an uncorrelated part). Our own implementation (a running least-squares projection).
+- Miyamoto Musashi (c. 1584 - 1645): the interface's motifs - his painting seal 二天 (Niten) and the five rings of his
+  Go Rin no Sho - are drawn anew in code (Source/MusashiArt.h); no historical seal impression or painting is reproduced.
+- The reference used to tune FOCUS is a commercial plugin the artist owns, rendered on their machine; only measurements of
+  its behaviour on the artist's voice guided the design - none of its code, data or sound is in this plugin.

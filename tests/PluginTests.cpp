@@ -78,7 +78,8 @@ bool sameParams (const afs::Params& a, const afs::Params& b)
            && near (a.outputDb, b.outputDb) && a.bands == b.bands && near (a.xLow, b.xLow) && near (a.xHigh, b.xHigh)
            && a.bandStyle == b.bandStyle && near (a.bandDrive[0], b.bandDrive[0]) && near (a.bandDrive[1], b.bandDrive[1])
            && near (a.bandDrive[2], b.bandDrive[2]) && near (a.bandMix[0], b.bandMix[0]) && near (a.bandMix[1], b.bandMix[1])
-           && near (a.bandMix[2], b.bandMix[2]) && near (a.dynamics, b.dynamics) && near (a.essGuard, b.essGuard);
+           && near (a.bandMix[2], b.bandMix[2]) && near (a.dynamics, b.dynamics) && near (a.essGuard, b.essGuard)
+           && near (a.focus, b.focus) && a.voicing == b.voicing;
 }
 } // namespace
 
@@ -95,16 +96,18 @@ int main()
                                          "bands", "xLow", "xHigh", "b1Style", "b1Drive", "b1Mix", "b2Style", "b2Drive", "b2Mix",
                                          "b3Style", "b3Drive", "b3Mix", "dynamics", "essGuard",
                                          // 3.0, appended
-                                         "input" };
+                                         "input",
+                                         // 4.0, appended
+                                         "focus", "voicing" };
         auto& params = p.getParameters();
         check (params.size() == frozen.size(), "parameter count = " + juce::String (frozen.size()));
         bool ids = true;
         for (int i = 0; i < params.size() && i < frozen.size(); ++i)
         {
             auto* wp = dynamic_cast<juce::AudioProcessorParameterWithID*> (params[i]);
-            ids = ids && wp != nullptr && wp->getParameterID() == frozen[i] && wp->getVersionHint() == (i < 14 ? 1 : (i < 28 ? 2 : 3));
+            ids = ids && wp != nullptr && wp->getParameterID() == frozen[i] && wp->getVersionHint() == (i < 14 ? 1 : (i < 28 ? 2 : (i < 29 ? 3 : 4)));
         }
-        check (ids, "every parameter in its frozen place, version hint 1 (1.0) / 2 (2.0) / 3 (3.0)");
+        check (ids, "every parameter in its frozen place, version hint 1 (1.0) / 2 (2.0) / 3 (3.0) / 4 (4.0)");
         check (sameParams (p.readParams(), afs::Params {}) && p.readParams().quality == afs::Params {}.quality,
                "defaults = the engine's defaults (= the Init preset), QUALITY Best (8x)");
         prepare (p);

@@ -95,3 +95,63 @@ missed it; both now test a take 20 dB quiet with INPUT +20 dB (DSP 0.1 dB, audit
 retuned at the level LEARN actually sets (3.0.0 tuned them 3 dB lower: summed-channel loudness instead of the
 channels' mean): Tube Grit +2 / 50 %, Ess-Safe Grit 0 / 70 %, Warm Tape +6, Console Glue +6, Aggressive Lead +4, Split
 Warmth +6 / 50 %, Loud Accents +1, Lift the Details +6 - UTMOS 2.020 - 2.064 vs the dry take's 2.043.
+
+## F14 - 4.0: decoupled saturation, measured against the reference at EQUAL SQUASH
+3.0.1 failed the artist's ear on their own vocal: "boxy", harsh, glitchy. Measured on that vocal at the level LEARN sets,
+against a respected commercial tape-machine emulation (rendered through the artist's own licence; its measurements guide
+the design, nothing of it is used): at the same amount of saturation both squash the low mids about equally - the
+difference was tone. The reference's own linear response is a gentle smile (+0.6..1.5 dB at 60 Hz, -0.3..1 dB at 500 Hz -
+2 kHz, +1.1..1.8 dB at 8 - 16 kHz); several of our circuits' internal filters cut 8 - 16 kHz by 0.9 - 1.3 dB and the vocal
+presets added high cuts: a dull top over a full middle - heard as a box.
+- The engine: each circuit gives only its colour = output - its small-signal response (ADAA's linear response is the
+  two-sample mean; the transformers have an exact linear twin); the voice never passes a circuit.
+- The measures (research/colour.py; research/bussgang.py is the split, as the engine runs it): per band, the linear part vs the residual (coherence); box = the low-mid tilt hump;
+  silk = 8 - 16 kHz tilt; fizz, honk, weight, bite = where the residual sits; articulation = 2 - 6 kHz envelope range;
+  squash = the 250 - 1000 Hz envelope range; level wobble.
+- The comparison axis matters: at equal *colour* the reference looked better, because most of its "colour" is
+  compression; at equal *squash* (the low-mid dynamics) the comparison is fair.
+- A first click detector reported 109 bursts on ESS GUARD - made fair (each processor's linear part removed first), it
+  reversed; it was retracted. Glitches are tested by stationarity instead (F17).
+
+## F15 - squash and harmonics apart (Bussgang), FOCUS per circuit and per drive
+FOCUS first shaped the whole colour - including the circuit's squash, which then squashed the presence and the lows but
+not the mids: a new box (+1.3 dB). Bussgang (1952): for a memoryless circuit the colour = a gain of the input (one for all
+frequencies) + uncorrelated harmonics. The engine estimates the gain as the local least-squares projection of the
+colour on the band's signal (two one-pole stages, 2.5 ms each), applies 30 % of it evenly (kFocusSquash), and shapes only
+the harmonics. The shapes (Source/FocusShapes.h) were optimised per circuit on the artist's vocal against the reference at
+both speeds at equal squash - box, fizz, honk below the better speed's, weight and bite above, air between the duller
+speed's and +2.5 dB, no mud (weight at most 2 dB past the reference) - with the weight voiced per DRIVE (the reference's
+low end moves with its input in its own way). Lessons: optimise on the shipping engine's own colour, with the engine's
+exact estimator and the exact squash of the full output (a proxy squash biased every comparison by 0.1 - 0.3 dB).
+
+## F16 - presets
+Vocal presets carry no filters (LOW CUT shapes what drives the circuit and thins the voice's own lows in 4.0; HIGH CUT
+dulls it); each one's DRIVE is solved on the artist's vocal (INPUT at LEARN's +17.9 dB) for its squash target. The effect
+presets (ad-libs, 808, drums, buses, master, lo-fi, Forbidden) keep the classic circuit (FOCUS 0, VOICING off).
+
+## F17 - ESS GUARD 4.0, and glitches by stationarity
+The colour fades over an ess (1 ms in, 40 ms out, after FOCUS: none of its filters' ring-out either); the audio waits 4 ms
+more than the network's decision so the guard is complete before the ess arrives (latency 12 ms while on); a guarded ess
+gets the vowels' loudness change (the table's estimate) so the balance holds with AUTO on or off. Guarded esses: 50 - 54 dB
+less distortion than the input. Stationarity tests: a periodic vowel must give a periodic output (frames of whole
+periods: 0.0006 dB), every circuit, AUTO, DYNAMICS, ESS GUARD, LIVE; forced guard switching every 50 ms adds no highs.
+
+## F18 - the interface (4.0)
+The artist asked for no knobs, a smaller face (660 x 350 at 100 %), better composition, the Japanese and seal elements
+kept, "a touch of ancient". DRIVE = a katana (the hero control); every other continuous control = a brush ensō that
+closes with its value; switches = hanko seals (vermilion when on); the sections named after Musashi's five rings with a
+traditional palette; his painting seal 二天 (Niten) stamped over 禁. All drawn in code (Source/MusashiArt.h,
+Source/SealControls.h); the brush font subset gained 二天一流地水火風空輪 (the 209 existing glyphs byte-identical).
+
+## F19 - the final gate: perceived quality, then character
+Optimising placement alone pushed the harmonics' level up (to 3x) to out-do the reference's weight and bite - and the
+predicted listener score (UTMOS, which matched the artist's ear before) then fell 0.07 - 0.37 below the reference's at
+equal squash: more grit, heard as worse. 4.0 ships with each circuit's harmonics at the level where its UTMOS meets the
+reference's at equal squash (src: harm_scale per circuit, 0.37 - 0.7 of the optimum's), checked on the real plugin at
+DRIVE 8 and 12 for every circuit (12 of 16 within 0.02, all within 0.03; DNSMOS 13 of 16). VOICING stays on: off gains
+UTMOS 0.03 but loses DNSMOS (7 of 16) and the box and air advantage. The cost, stated: at equal squash 4.0 is cleaner than
+the reference (weight above it at 2 of 64 points, bite at 28). Also found here: UTMOS does not hear a box or a dull top
+(3.0.1's Warm Tape scores above the dry take) - it guards against harshness, it does not judge tone.
+AUTO 4.0: the table's estimate times a correction measured on the unguarded parts only (a guarded ess never steers the
+vowels' level); a guarded ess gets the vowels' net change exactly. Presets: DRIVE solved per preset for its squash on the
+artist's vocal; PENTODE's squash peaks at -1.37 dB (DRIVE 16) - Aggressive Lead sits there.

@@ -1,5 +1,5 @@
 Started validating: ~/axell-forbidden-seal/build/AxellForbiddenSeal_artefacts/Release/VST3/Axell Forbidden Seal.vst3
-Random seed: 0x40ad464
+Random seed: 0x344815d
 Validation started
 Strictness level: 10
 -----------------------------------------------------------------
@@ -7,7 +7,7 @@ Starting tests in: pluginval / Scan for plugins located in: ~/axell-forbidden-se
 Num plugins found: 1
 
 Testing plugin: VST3-Axell Forbidden Seal-4ac904c2-82723099
-Axell Yobag: Axell Forbidden Seal v3.0.1
+Axell Yobag: Axell Forbidden Seal v4.0.0
 Completed tests in pluginval / Scan for plugins located in: ~/axell-forbidden-seal/build/AxellForbiddenSeal_artefacts/Release/VST3/Axell Forbidden Seal.vst3
 -----------------------------------------------------------------
 Starting tests in: pluginval / Open plugin (cold)...

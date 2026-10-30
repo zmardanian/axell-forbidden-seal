@@ -1,11 +1,17 @@
 #pragma once
 // Axell Forbidden Seal - the engine (framework independent, no JUCE).
 //
-// Signal path, per channel:
-//   DRIVE (+ PUNISH 20 dB)  ->  LOW CUT (12 dB/oct) + THUMP (a resonant bump at the low cut)  ->  TONE (tilt)
-//   -> [ oversampled: STYLE model ]  ->  HIGH CUT (6 dB/oct, or STEEP: 30 dB/oct)  ->  AIR  ->  AUTO gain
-//   -> MIX with the dry signal (delayed by the oversampling latency)  ->  OUTPUT
-// LOW CUT, THUMP and TONE act before the saturation (they decide what distorts), HIGH CUT and AIR after it.
+// 4.0 - DECOUPLED SATURATION. Every circuit gives only what it ADDS (its output minus its own small-signal response):
+// the voice itself never passes a circuit, so its highs and mids stay exactly as recorded, and where the added colour
+// lands is chosen on purpose:
+//   pre  = LOW CUT (12 dB/oct) + THUMP -> TONE (tilt)                       (what drives the circuit)
+//   c    = [ oversampled: STYLE circuit's colour of pre x DRIVE ] / DRIVE    (per band; ESS GUARD fades it on esses)
+//   c    = squash + harmonics: the part of c that is a gain of the voice (its local least-squares projection on the
+//          band's signal, 5 ms - Bussgang: for a memoryless circuit one gain for every frequency) and the rest
+//   c'   = SQUASH x squash (flat: the voice's tone kept) + FOCUS ( harmonics ): the new harmonics kept out of the
+//          vowels' range (~1 - 1.5 kHz: the box) and softened above 7 kHz (fizz); FOCUS 0 = the classic circuit
+//   wet  = VOICING ( pre + c ) -> HIGH CUT -> AIR -> AUTO;   out = MIX (dry / wet) -> OUTPUT
+// At FOCUS 0 and VOICING off this is exactly the classic circuit (minus its linear filters); at MIX 0 the dry.
 //
 // Level reference: u = 1 inside a model is 0 dBFS at DRIVE 0 dB (a vocal at -18 dBFS RMS meets the curve gently).
 // Every model has unity gain for small signals (it is a pure filter below its knee), so DRIVE pushes the signal into
@@ -90,6 +96,9 @@ struct Params
     // 3.0
     float inputDb = 0.0f;        // INPUT: the level into the circuits (-24 .. 24; LEARN sets it so a take sits at the designed level)
     float essGuard = 0.0f;       // 0 = off .. 100 %: how much of each ess stays out of the saturation (the suite's sibilance network)
+    // 4.0
+    float focus = 100.0f;        // 0 .. 100 %: the colour kept out of the vowels' range (the box) and the fizz band, put into weight and bite
+    bool voicing = true;         // the seal's tone: a touch of weight and air, the honk range eased (off: the voice exactly as it came in)
 };
 
 //==============================================================================
@@ -308,13 +317,14 @@ public:
         pre.reset(); de.reset(); bump.reset(); gap.reset();
         M.fill (0.0); H.fill (0.0);
     }
+    // 4.0: in place, the COLOUR only - what the magnetic loop adds to the emphasised signal, de-emphasised (the
+    // voice itself never passes the model)
     void process (float* x, int n, int ch) noexcept
     {
         for (int i = 0; i < n; ++i)
         {
-            const double h = pre.process ((double) x[i], ch) * kHd;
-            const double y = de.process (step (h, ch) * norm, ch);
-            x[i] = (float) gap.process (bump.process (y, ch), ch);
+            const double e = pre.process ((double) x[i], ch);
+            x[i] = (float) de.process (step (e * kHd, ch) * norm - e, ch);
         }
     }
 
@@ -439,10 +449,12 @@ public:
         lo = std::min ((int) p, kBiases - 2);
         frac = (float) (p - lo);
     }
-    void reset() noexcept { shift.fill (0.0); dc.fill (0.0); lp.reset(); x1.fill (0.0); F1.fill (0.0); }
+    void reset() noexcept { shift.fill (0.0); dc.fill (0.0); lp.reset(); x1.fill (0.0); F1.fill (0.0); in1.fill (0.0); }
+    // 4.0: in place, the COLOUR only (the stage's output minus its small-signal response; ADAA's is the two-sample mean)
     void process (float* x, int n, int ch) noexcept
     {
         double& s = shift[(size_t) ch];
+        double& w = in1[(size_t) ch];
         double& d = dc[(size_t) ch];
         const auto& A = curves[(size_t) lo];
         const auto& B = curves[(size_t) lo + 1];
@@ -458,9 +470,10 @@ public:
             const double u = x[i] - s / kVin;
             const double cond = std::max (0.0, bias + u * kVin);   // grid conduction charges the coupling capacitor
             s += chargeK * kShift * cond - relK * s;
-            const double y = lp.process (adaa (u, p, q, f, F), ch);
-            d += dcK * (y - d);
-            x[i] = (float) (y - d);
+            const double c = lp.process (adaa (u, p, q, f, F) - 0.5 * (x[i] + w), ch);
+            w = x[i];
+            d += dcK * (c - d);
+            x[i] = (float) (c - d);
         }
     }
 
@@ -469,7 +482,7 @@ private:
     inline static std::array<double, kBiases> biasV {};
     inline static std::once_flag curvesOnce;
     Biquad lp;
-    std::array<double, kMaxCh> shift {}, dc {}, x1 {}, F1 {};
+    std::array<double, kMaxCh> shift {}, dc {}, x1 {}, F1 {}, in1 {};
     double T = 1.0 / 192000.0, chargeK = 0, relK = 0, dcK = 0;
     int lo = 4;
     float frac = 0.0f;
@@ -515,10 +528,12 @@ public:
         lo = std::min ((int) p, kBiases - 2);
         frac = (float) (p - lo);
     }
-    void reset() noexcept { sag.fill (0.0); lp.reset(); x1.fill (0.0); F1.fill (0.0); }
+    void reset() noexcept { sag.fill (0.0); lp.reset(); x1.fill (0.0); F1.fill (0.0); in1.fill (0.0); }
+    // 4.0: in place, the COLOUR only
     void process (float* x, int n, int ch) noexcept
     {
         double& s = sag[(size_t) ch];
+        double& w = in1[(size_t) ch];
         const auto& A = curves[(size_t) lo];
         const auto& B = curves[(size_t) lo + 1];
         const double fr = frac;
@@ -530,11 +545,13 @@ public:
         for (int i = 0; i < n; ++i)
         {
             // supply sag: the stage draws more current on loud passages, the supply droops, the gain falls (bloom)
-            const double u = x[i] / (1.0 + 0.6 * s);
+            const double xin = x[i];
+            const double u = xin / (1.0 + 0.6 * s);
             const double y = adaa (u, p, q, f, F);
             const double load = std::abs (y);
             s += (load > s ? sagA : sagR) * (load - s);
-            x[i] = (float) lp.process (y, ch);
+            x[i] = (float) lp.process (y - 0.5 * (xin + w), ch);
+            w = xin;
         }
     }
 
@@ -542,7 +559,7 @@ private:
     inline static std::array<Table, kBiases> curves;
     inline static std::once_flag curvesOnce;
     Biquad lp;
-    std::array<double, kMaxCh> sag {}, x1 {}, F1 {};
+    std::array<double, kMaxCh> sag {}, x1 {}, F1 {}, in1 {};
     double T = 1.0 / 192000.0, sagA = 0, sagR = 0;
     int lo = 4;
     float frac = 0.0f;
@@ -552,7 +569,7 @@ private:
 struct TransformerCore
 {
     double T = 1.0 / 192000.0, wc = 1.0, phiS = 1.0, K = 24.0;
-    std::array<double, kMaxCh> phi {};
+    std::array<double, kMaxCh> phi {}, phiL {};
     void prepare (double fs, double hpfHz, double satHz, double k)
     {
         T = 1.0 / fs;
@@ -561,7 +578,16 @@ struct TransformerCore
         K = k;
     }
     void setSat (double satHz) noexcept { phiS = 1.0 / (2.0 * kPi * satHz); }
-    void reset() noexcept { phi.fill (0.0); }
+    void reset() noexcept { phi.fill (0.0); phiL.fill (0.0); }
+    // the same core without saturation (its small-signal response: a first-order high pass), same integration
+    double linear (double v, int ch) noexcept
+    {
+        double& p = phiL[(size_t) ch];
+        const double vc0 = v - wc * p;
+        const double vc = 0.5 * (vc0 + v - wc * (p + T * vc0));
+        p += T * vc;
+        return vc;
+    }
     double process (double v, int ch) noexcept
     {
         double& p = phi[(size_t) ch];
@@ -608,19 +634,23 @@ public:
     }
     // a big transformer (saturates at 25 Hz) .. a small one (90 Hz)
     void setCharacter (double c) noexcept { core.setSat (25.0 * std::pow (90.0 / 25.0, std::clamp (c, 0.0, 1.0))); }
-    void reset() noexcept { core.reset(); dc.fill (0.0); x1.fill (0.0); F1.fill (0.0); }
+    void reset() noexcept { core.reset(); dc.fill (0.0); x1.fill (0.0); F1.fill (0.0); in1.fill (0.0); }
+    // 4.0: in place, the COLOUR only (the transformer's and the stage's saturation, without their linear response)
     void process (float* x, int n, int ch) noexcept
     {
         double& d = dc[(size_t) ch];
+        double& w = in1[(size_t) ch];
         auto f = [&] (double u) { return (double) stage ((float) u); };
         auto F = [&] (double u) { return stage.integral (u); };
         double& p = x1[(size_t) ch];
         double& q = F1[(size_t) ch];
         for (int i = 0; i < n; ++i)
         {
-            const double y = adaa (core.process (x[i], ch), p, q, f, F);
-            d += dcK * (y - d);
-            x[i] = (float) (y - d);
+            const double lin = core.linear (x[i], ch);
+            const double c = adaa (core.process (x[i], ch), p, q, f, F) - 0.5 * (lin + w);
+            w = lin;
+            d += dcK * (c - d);
+            x[i] = (float) (c - d);
         }
     }
 
@@ -628,7 +658,7 @@ private:
     TransformerCore core;
     inline static Table stage;
     inline static std::once_flag stageOnce;
-    std::array<double, kMaxCh> dc {}, x1 {}, F1 {};
+    std::array<double, kMaxCh> dc {}, x1 {}, F1 {}, in1 {};
     double T = 1.0 / 192000.0, dcK = 0;
 };
 
@@ -670,10 +700,12 @@ public:
         reset();
     }
     void setCharacter (double c) noexcept { starve = std::clamp (c, 0.0, 1.0); }
-    void reset() noexcept { env.fill (0.0); dc.fill (0.0); lp.reset(); x1.fill (0.0); F1.fill (0.0); }
+    void reset() noexcept { env.fill (0.0); dc.fill (0.0); lp.reset(); x1.fill (0.0); F1.fill (0.0); in1.fill (0.0); }
+    // 4.0: in place, the COLOUR only
     void process (float* x, int n, int ch) noexcept
     {
         double& e = env[(size_t) ch];
+        double& w = in1[(size_t) ch];
         double& d = dc[(size_t) ch];
         auto f = [&] (double u) { return (double) stage ((float) u); };
         auto F = [&] (double u) { return stage.integral (u); };
@@ -687,8 +719,10 @@ public:
             // a starving bias pulls the operating point toward cut-off on loud passages: the stage gates and sputters
             const double off = -0.35 * starve * std::min (1.0, e);
             const double y = (adaa (u + off, p, q, f, F) - stage ((float) off)) / (1.0 - 0.5 * starve * std::min (1.0, e));
-            d += dcK * (y - d);
-            x[i] = (float) lp.process (y - d, ch);
+            const double c = y - 0.5 * (u + w);
+            w = u;
+            d += dcK * (c - d);
+            x[i] = (float) lp.process (c - d, ch);
         }
     }
 
@@ -696,7 +730,7 @@ private:
     inline static Table stage;
     inline static std::once_flag stageOnce;
     Biquad lp;
-    std::array<double, kMaxCh> env {}, dc {}, x1 {}, F1 {};
+    std::array<double, kMaxCh> env {}, dc {}, x1 {}, F1 {}, in1 {};
     double T = 1.0 / 192000.0, envA = 0, envR = 0, dcK = 0, starve = 0.5;
 };
 
@@ -714,10 +748,14 @@ public:
     // a big core (saturates at 20 Hz) .. a small one (120 Hz)
     void setCharacter (double c) noexcept { core.setSat (20.0 * std::pow (6.0, std::clamp (c, 0.0, 1.0))); }
     void reset() noexcept { core.reset(); }
+    // 4.0: in place, the COLOUR only (the core's saturation and the output stage's, without the core's linear response)
     void process (float* x, int n, int ch) noexcept
     {
         for (int i = 0; i < n; ++i)
-            x[i] = out ((float) core.process (x[i], ch));
+        {
+            const double lin = core.linear (x[i], ch);
+            x[i] = (float) (out ((float) core.process (x[i], ch)) - lin);
+        }
     }
 
 private:
@@ -754,6 +792,7 @@ public:
                 curves[(size_t) k].build ([&] (double u) { return solve (u) / g; }, 16.0f, 8193, true);
             } });
         lp.onePoleLow (fsOs, 22000.0);
+        dcK = 1.0 - std::exp (-2.0 * kPi * 3.0 / fsOs);
         reset();
     }
     void setCharacter (double c) noexcept
@@ -762,7 +801,8 @@ public:
         lo = std::min ((int) p, kSteps - 2);
         frac = p - lo;
     }
-    void reset() noexcept { x1.fill (0.0); F1.fill (0.0); lp.reset(); }
+    void reset() noexcept { x1.fill (0.0); F1.fill (0.0); lp.reset(); dc.fill (0.0); }
+    // 4.0: in place, the COLOUR only (the asymmetric clipper makes DC: blocked at 3 Hz)
     void process (float* x, int n, int ch) noexcept
     {
         const auto& A = curves[(size_t) lo];
@@ -772,16 +812,23 @@ public:
         auto F = [&] (double u) { return (1.0 - fr) * A.integral (u) + fr * B.integral (u); };
         double& p = x1[(size_t) ch];
         double& q = F1[(size_t) ch];
+        double& d = dc[(size_t) ch];
         q = F (p);
         for (int i = 0; i < n; ++i)
-            x[i] = (float) lp.process (adaa (x[i], p, q, f, F), ch);
+        {
+            const double prev = p;
+            const double c = lp.process (adaa (x[i], p, q, f, F) - 0.5 * (x[i] + prev), ch);
+            d += dcK * (c - d);
+            x[i] = (float) (c - d);
+        }
     }
 
 private:
     inline static std::array<Table, kSteps> curves;
     inline static std::once_flag curvesOnce;
     Biquad lp;
-    std::array<double, kMaxCh> x1 {}, F1 {};
+    std::array<double, kMaxCh> x1 {}, F1 {}, dc {};
+    double dcK = 0.0;
     int lo = 4;
     double frac = 0.0;
 };
@@ -791,48 +838,84 @@ class FoldModel
 {
 public:
     static constexpr double kA = 1.6;   // folding rate: the first fold at |u| = pi / (2 a)
-    void prepare (double fsOs) { lp.onePoleLow (fsOs, 24000.0); reset(); }
+    void prepare (double fsOs) { lp.onePoleLow (fsOs, 24000.0); dcK = 1.0 - std::exp (-2.0 * kPi * 3.0 / fsOs); reset(); }
     void setCharacter (double c) noexcept
     {
         o = 0.6 * (std::clamp (c, 0.0, 1.0) - 0.5) * 2.0;   // offset -0.6 .. 0.6 (0 at the centre: symmetric, odd only)
         so = std::sin (kA * o);
         co = std::cos (kA * o);
     }
-    void reset() noexcept { x1.fill (0.0); F1.fill (0.0); lp.reset(); }
+    void reset() noexcept { x1.fill (0.0); F1.fill (0.0); lp.reset(); dc.fill (0.0); }
+    // 4.0: in place, the COLOUR only
     void process (float* x, int n, int ch) noexcept
     {
-        // y = (sin(a(u+o)) - sin(a o)) / (a cos(a o)): unity slope at 0, no DC; F its exact antiderivative
+        // y = (sin(a(u+o)) - sin(a o)) / (a cos(a o)): unity slope at 0; F its exact antiderivative
         const double den = kA * co;
         auto f = [&] (double u) { return (std::sin (kA * (u + o)) - so) / den; };
         auto F = [&] (double u) { return (-std::cos (kA * (u + o)) / kA - so * u) / den; };
         double& p = x1[(size_t) ch];
         double& q = F1[(size_t) ch];
+        double& d = dc[(size_t) ch];
         q = F (p);
         for (int i = 0; i < n; ++i)
-            x[i] = (float) lp.process (adaa (x[i], p, q, f, F), ch);
+        {
+            const double prev = p;
+            const double c = lp.process (adaa (x[i], p, q, f, F) - 0.5 * (x[i] + prev), ch);
+            d += dcK * (c - d);
+            x[i] = (float) (c - d);
+        }
     }
 
 private:
     Biquad lp;
-    std::array<double, kMaxCh> x1 {}, F1 {};
-    double o = 0.0, so = 0.0, co = 1.0;
+    std::array<double, kMaxCh> x1 {}, F1 {}, dc {};
+    double o = 0.0, so = 0.0, co = 1.0, dcK = 0.0;
 };
 
 //==============================================================================
-// AUTO: the loudness the model adds at each DRIVE and CHARACTER, measured (tools/SealCalibrate.cpp -> AutoGain.h)
+// AUTO: the loudness the colour costs (the saturation compresses), measured per style, DRIVE, CHARACTER, at FOCUS 0 and
+// 100 (tools/SealCalibrate.cpp -> AutoGain.h); AUTO takes it back
 #include "AutoGain.h"
 
-inline float autoGainDb (int style, float driveDb, float character) noexcept
+// FOCUS 100: the share of the circuit's squash kept (flat over the voice); docs/DECISIONS F14
+constexpr double kFocusSquash = 0.3;
+// FOCUS 100, per style: where its new harmonics land and their level - found on the artist's voice against the reference
+// tape machine at both speeds, at equal squash (docs/DECISIONS F14): the weight shelf at 180 Hz per DRIVE (the low
+// harmonics follow the drive as the reference's do), the box notch (f, Q, dB), a second dip (f, dB, Q 1.2), the fizz
+// shelf (f, dB), the harmonics' gain
+struct FocusShape { std::array<double, 9> weightDb; double f1, q1, g1, f2, g2, fH, gH, harm; };
+#include "FocusShapes.h"
+// VOICING (shared): weight at 110 Hz, the honk range at 1.2 kHz (Q 0.7), air at 10 kHz
+constexpr double kVoiceLowDb = 2.0, kVoiceMidDb = -1.5, kVoiceAirDb = 0.894;
+
+// the weight shelf at a drive above the designed level (linear between the measured drives, held beyond them)
+inline double weightAt (const FocusShape& f, double drive) noexcept
+{
+    const auto& d = kWeightDrives;
+    if (drive <= d.front()) return f.weightDb.front();
+    if (drive >= d.back()) return f.weightDb.back();
+    size_t i = 0;
+    while (drive > d[i + 1]) ++i;
+    const double t = (drive - d[i]) / (d[i + 1] - d[i]);
+    return f.weightDb[i] + t * (f.weightDb[i + 1] - f.weightDb[i]);
+}
+
+inline float autoGainDb (int style, float driveDb, float character, float focus) noexcept
 {
     using namespace autogain;
     const float dp = std::clamp (driveDb / kDriveStep, 0.0f, (float) (kDrives - 1) - 1.0e-4f);
     const float cp = std::clamp (character / 100.0f * (kChars - 1), 0.0f, (float) (kChars - 1) - 1.0e-4f);
     const int di = (int) dp, ci = (int) cp;
     const float dt = dp - di, ct = cp - ci;
-    const auto& t = kTable[(size_t) std::clamp (style, 0, kNumStyles - 1)];
-    const float a = t[(size_t) di][(size_t) ci] + dt * (t[(size_t) di + 1][(size_t) ci] - t[(size_t) di][(size_t) ci]);
-    const float b = t[(size_t) di][(size_t) ci + 1] + dt * (t[(size_t) di + 1][(size_t) ci + 1] - t[(size_t) di][(size_t) ci + 1]);
-    return -(driveDb + a + ct * (b - a));   // take back the drive and what the model added on top
+    auto at = [&] (const auto& t)
+    {
+        const float a = t[(size_t) di][(size_t) ci] + dt * (t[(size_t) di + 1][(size_t) ci] - t[(size_t) di][(size_t) ci]);
+        const float b = t[(size_t) di][(size_t) ci + 1] + dt * (t[(size_t) di + 1][(size_t) ci + 1] - t[(size_t) di][(size_t) ci + 1]);
+        return a + ct * (b - a);
+    };
+    const int st = std::clamp (style, 0, kNumStyles - 1);
+    const float fo = std::clamp (focus, 0.0f, 100.0f) / 100.0f;
+    return -(at (kFlat[(size_t) st]) * (1.0f - fo) + at (kFocus[(size_t) st]) * fo);
 }
 
 //==============================================================================
@@ -1041,14 +1124,19 @@ public:
         for (auto& st : stages)
             st.prepare (fs, block, active.quality, params.character / 100.0);
         ess.prepare (fs, axell::voice::DetectorConfig::live());
-        look = ess.frameDelay() + ess.hopSize();
+        // the audio waits for the network's decision, plus 4 ms: the guard is fully on before an ess reaches the circuit
+        preRoll = (int) std::lround (0.004 * fs);
+        look = ess.frameDelay() + ess.hopSize() + preRoll;
         const int maxLat = stages[0].latencyFor (3) + look;
         for (auto& d : dryDelay) d.prepare (maxLat + 4);
         for (auto& d : lookDelay) d.prepare (look + 4);
-        for (auto& b : bandClean) for (auto& d : b) d.prepare (stages[0].latencyFor (3) + 4);
+        for (auto& d : preDelay) d.prepare (stages[0].latencyFor (3) + 4);
         for (auto& d : compDelay) d.prepare (stages[0].latencyFor (3) + 4);
         for (auto& b : band) for (auto& v : b) v.assign ((size_t) block, 0.0f);
-        for (auto& b : cleanLine) for (auto& v : b) v.assign ((size_t) block, 0.0f);
+        for (auto& v : preLine) v.assign ((size_t) block, 0.0f);
+        for (auto& b : bandIn) for (auto& v : b) v.assign ((size_t) block, 0.0f);
+        for (auto& b : bandInDelay) for (auto& d : b) d.prepare (stages[0].latencyFor (3) + 4);
+        bgK = 1.0 - std::exp (-1.0 / (0.0025 * fs));
         for (auto& v : comp) v.assign ((size_t) block, 1.0f);
         dryIn.assign ((size_t) block * kMaxCh, 0.0f);
         learnMono.assign ((size_t) block, 0.0f);
@@ -1060,7 +1148,7 @@ public:
         kIn.prepare (fs);
         kOut.prepare (fs);
         lK = 1.0 - std::exp (-1.0 / (3.0 * fs));
-        gA = 1.0f - std::exp (-1.0f / (0.001f * (float) fs));
+        gA = 1.0f - std::exp (-1.0f / (0.001f * (float) fs));   // the colour fades out at an ess within ~1 ms (only the colour fades: no click)
         gR = 1.0f - std::exp (-1.0f / (0.040f * (float) fs));
         envA = 1.0f - std::exp (-1.0f / (0.005f * (float) fs));
         envR = 1.0f - std::exp (-1.0f / (0.080f * (float) fs));
@@ -1083,6 +1171,8 @@ public:
     int latencySamples() const noexcept { return latencyPub.load (std::memory_order_acquire); }
     axell::LatencyHandshake& handshake() noexcept { return hs; }
     int essLookAhead() const noexcept { return look; }
+    // tests: how far behind the newest input the network's decision is (the look-ahead without the guard's head start)
+    int essDecisionLag() const noexcept { return look - preRoll; }
 
     void reset() noexcept
     {
@@ -1092,15 +1182,20 @@ public:
             activeBands = wantBands;
         for (auto& st : stages)
             st.reset();
-        for (auto* f : { &lowCut, &thumpF, &tiltLo, &tiltHi, &hc1, &hc2, &hc3, &air, &apDry1, &apDry2 })
+        for (auto* f : { &lowCut, &thumpF, &tiltLo, &tiltHi, &hc1, &hc2, &hc3, &air, &apDry1, &apDry2, &apPre1, &apPre2 })
             f->reset();
+        for (auto& b : fRb) for (auto& f : b) f.reset();
+        for (auto& f : vc) f.reset();
         for (auto& b : xo)
             for (auto& f : b)
                 f.reset();
         for (auto& d : dryDelay) d.reset();
         for (auto& d : lookDelay) d.reset();
-        for (auto& b : bandClean) for (auto& d : b) d.reset();
+        for (auto& d : preDelay) d.reset();
         for (auto& d : compDelay) d.reset();
+        for (auto& b : bandInDelay) for (auto& d : b) d.reset();
+        for (auto* a : { &bgNum, &bgDen, &bgNum2, &bgDen2 })
+            for (auto& b : *a) b.fill (0.0);
         guardDelay.reset();
         ess.reset();
         essP = 0.0f;
@@ -1108,11 +1203,11 @@ public:
         env = 0.0f;
         kIn.resetState();
         kOut.resetState();
-        lIn = lOut = gIn = gOut = 0.0;
-        lCount = gCount = 0;
-        guardGain = 0.0f;
+        lIn = lOut = 0.0;
+        lCount = 0;
         trimTick = 0;
         trimDb = 0.0f;
+        trimG = 1.0f;
         driveG = driveT;
         wetG = wetT;
         dryG = dryT;
@@ -1122,6 +1217,8 @@ public:
     }
 
     float heat() const noexcept { return heatDb; }
+    // DYNAMICS: the drive's offset right now (dB, any thread; for the display)
+    float dynamicsNow() const noexcept { return dynPub.load (std::memory_order_relaxed); }
     float essProbability() const noexcept { return essP; }
     float guardNow() const noexcept { return guardDb; }
     void setBypass (bool b) noexcept { bypassT = b ? 1.0f : 0.0f; }
@@ -1197,6 +1294,8 @@ private:
                             f.reset();
                     apDry1.reset();
                     apDry2.reset();
+                    apPre1.reset();
+                    apPre2.reset();
                     warm = std::max (warm, stages[0].latency() + block);
                 }
             }
@@ -1216,8 +1315,11 @@ private:
         }
         for (auto& d : dryDelay) d.reset();
         for (auto& d : lookDelay) d.reset();
-        for (auto& b : bandClean) for (auto& d : b) d.reset();
+        for (auto& d : preDelay) d.reset();
         for (auto& d : compDelay) d.reset();
+        for (auto& b : bandInDelay) for (auto& d : b) d.reset();
+        for (auto* a : { &bgNum, &bgDen, &bgNum2, &bgDen2 })
+            for (auto& b : *a) b.fill (0.0);
         guardDelay.reset();
         ess.reset();
         latencyPub.store (latencyOf (active), std::memory_order_release);
@@ -1289,28 +1391,68 @@ private:
         }
         apDry1.allPass (fs, x1, 0.7071);
         apDry2.allPass (fs, x2, 0.7071);
+        apPre1.allPass (fs, x1, 0.7071);
+        apPre2.allPass (fs, x2, 0.7071);
+        // FOCUS: per band, its style's shape (each curve two identical sections at half the gain: the measured
+        // zero-phase prototype's magnitude, exactly)
+        const double fo = std::clamp (p.focus, 0.0f, 100.0f) / 100.0;
+        focusOn = fo > 1.0e-3;
+        squashAmt = 1.0 - fo * (1.0 - kFocusSquash);   // FOCUS 0: the circuit's whole squash (classic); 100: the measured share
+        // VOICING: the seal's tone - weight, the honk range eased, a breath of air (two sections each, as FOCUS)
+        voicingOn = p.voicing;
+        for (int k = 0; k < 2; ++k)
+        {
+            vc[(size_t) (0 + k)].shelf (fs, 110.0, 0.5 * kVoiceLowDb, false);
+            vc[(size_t) (2 + k)].peak (fs, 1200.0, 0.7, 0.5 * kVoiceMidDb);
+            vc[(size_t) (4 + k)].shelf (fs, 10000.0, 0.5 * kVoiceAirDb, true);
+        }
         inputDb = std::clamp (p.inputDb, -24.0f, 24.0f);
-        driveDb = inputDb + p.driveDb + (p.punish ? 20.0f : 0.0f);   // INPUT acts like drive into the circuits; AUTO takes both back
+        // INPUT acts like drive into the circuits; the colour comes back divided by the drive, so neither changes the
+        // level of the voice - AUTO only takes back what the saturation's compression costs
+        driveDb = inputDb + p.driveDb + (p.punish ? 20.0f : 0.0f);
         driveT = 1.0f;   // the drive itself is per band and per sample (below)
         for (int b = 0; b < kBands; ++b)
         {
             const int s = bandStyle (b);
             stages[(size_t) b].setStyle (s, force);
             bandDb[(size_t) b] = driveDb + (activeBands > 1 ? std::clamp (p.bandDrive[(size_t) b], -18.0f, 18.0f) : 0.0f);
-            // AUTO's table is "drive above the designed level": INPUT puts the take at that level, so the table is read
-            // at the drive alone and INPUT is taken back as a plain gain
-            bandAutoDb[(size_t) b] = p.autoGain ? autoGainDb (s, bandDb[(size_t) b] - inputDb, p.character) - inputDb : 0.0f;
+            // AUTO's table: the loudness the colour costs at a drive above the designed level (INPUT puts the take there)
+            bandAutoDb[(size_t) b] = autoGainDb (s, bandDb[(size_t) b] - inputDb, p.character, p.focus);
             bandMixT[(size_t) b] = activeBands > 1 ? std::clamp (p.bandMix[(size_t) b], 0.0f, 100.0f) / 100.0f : 1.0f;
-            // a guarded ess at the loudness the saturated signal has (AUTO: the input's; off: the drive's, measured)
-            bandCleanGain[(size_t) b] = p.autoGain ? 1.0f : (float) std::pow (10.0, (inputDb - autoGainDb (s, bandDb[(size_t) b] - inputDb, p.character)) / 20.0);
+        }
+        // FOCUS per band (after the bands' drives: the weight follows each band's drive)
+        for (int b = 0; b < kBands; ++b)
+        {
+            const auto& f = kFocusShapes[(size_t) std::clamp (bandStyle (b), 0, kNumStyles - 1)];
+            auto& fr = fRb[(size_t) b];
+            for (int k = 0; k < 2; ++k)
+            {
+                const double lowDb = weightAt (f, (double) (bandDb[(size_t) b] - inputDb));
+                fr[(size_t) (0 + k)].shelf (fs, 180.0, 0.5 * lowDb * fo, false);
+                fr[(size_t) (2 + k)].peak (fs, f.f1, f.q1, 0.5 * f.g1 * fo);
+                fr[(size_t) (4 + k)].peak (fs, f.f2, 1.2, 0.5 * f.g2 * fo);
+                fr[(size_t) (6 + k)].shelf (fs, f.fH, 0.5 * f.gH * fo, true);
+            }
+            harmAmtB[(size_t) b] = 1.0 + fo * (f.harm - 1.0);
         }
         autoOn = p.autoGain;
+        {
+            float a = 0.0f;
+            for (int b = 0; b < activeBands; ++b)
+                a += bandAutoDb[(size_t) b] * (activeBands > 1 ? bandMixT[(size_t) b] : 1.0f);
+            autoStaticDb = a / (float) activeBands + (voicingOn ? autogain::kVoicingDb : 0.0f);
+            autoStaticLin = (float) std::pow (10.0, autoStaticDb / 20.0);
+            autoStatic = autoOn ? autoStaticLin : 1.0f;
+            // the loudness the vowels lose to the saturation (the table's estimate): a guarded ess gets the same, so the
+            // esses keep their balance to the vowels with AUTO on or off
+            colourLoss = (float) std::pow (10.0, -(a / (float) activeBands) / 20.0);
+        }
         dynK = std::clamp (p.dynamics, -100.0f, 100.0f) / 100.0f;
         guardMax = std::clamp (p.essGuard, 0.0f, 100.0f) / 100.0f;
         const float mx = std::clamp (p.mix, 0.0f, 100.0f) / 100.0f;
         const float out = (float) std::pow (10.0, p.outputDb / 20.0);
         wetBase = out * mx;
-        wetT = wetBase * (float) std::pow (10.0, (autoOn ? trimDb : 0.0f) / 20.0);
+        wetT = wetBase;
         dryT = out * (1.0f - mx);
         if (force)
         {
@@ -1383,6 +1525,8 @@ private:
             const float envDb = 20.0f * std::log10 (env + 1.0e-9f);
             const float dynDb = std::clamp (dynK * 0.6f * (envDb + inputDb + 18.0f), -18.0f, 18.0f);   // re -18 dBFS after INPUT
             const float offDb = dynDb;
+            if (i == n - 1)
+                dynPub.store (offDb, std::memory_order_relaxed);
             for (int c = 0; c < ch; ++c)
             {
                 double v = in[c];
@@ -1394,6 +1538,7 @@ private:
                 }
                 if (toneOn)
                     v = tiltHi.process (tiltLo.process (v, c), c);
+                preLine[(size_t) c][(size_t) i] = (float) v;   // what the wet carries of the voice
                 double parts[kBands] = { v, 0.0, 0.0 };
                 if (nb >= 2)
                 {
@@ -1420,20 +1565,14 @@ private:
             for (int b = 0; b < nb; ++b)
             {
                 glide (bandDbG[(size_t) b], bandDb[(size_t) b], dK);   // DRIVE moves smoothly (no zipper)
-                const float d = bandDbG[(size_t) b], off = offDb;
-                const float g = (float) std::pow (10.0, (d + off) / 20.0);
+                const float g = (float) std::pow (10.0, (bandDbG[(size_t) b] + offDb) / 20.0);
                 for (int c = 0; c < ch; ++c)
                 {
-                    float& x = band[(size_t) b][(size_t) c][(size_t) i];
-                    cleanLine[(size_t) b][(size_t) c][(size_t) i] = x;
-                    x *= g;
+                    float& v = band[(size_t) b][(size_t) c][(size_t) i];
+                    bandIn[(size_t) b][(size_t) c][(size_t) i] = v;   // the band's signal, for the squash / harmonics split
+                    v *= g;
                 }
-                // the level the offsets cost, taken back after the circuit (AUTO's table; ESS GUARD always)
-                const int s = stages[(size_t) b].getStyle();
-                const float compOff = autoOn ? off : 0.0f;
-                comp[(size_t) b][(size_t) i] = std::abs (compOff) > 1.0e-3f
-                                                   ? (float) std::pow (10.0, (autoGainDb (s, d - inputDb + compOff, params.character) - autoGainDb (s, d - inputDb, params.character)) / 20.0)
-                                                   : 1.0f;
+                comp[(size_t) b][(size_t) i] = 1.0f / g;   // the colour comes back at the voice's level
             }
         }
         // 2. each band through its circuit (oversampled)
@@ -1441,7 +1580,8 @@ private:
         for (int b = 0; b < nb; ++b)
             for (int c = 0; c < ch; ++c)
                 stages[(size_t) b].process (band[(size_t) b][(size_t) c].data(), n, c, c == ch - 1, heatIn, heatDiff);
-        // 3. per sample, in time order: band level and MIX, the bands summed, high cut, air, AUTO, wet / dry, output
+        // 3. per sample, in time order: the colour of the bands (back at the voice's level, band MIX, ESS GUARD), FOCUS,
+        //    the voice added, VOICING, high cut, air, AUTO (unity on a guarded ess: its balance to the vowels kept), MIX
         float wg = wetG, dg = dryG;
         for (int i = 0; i < n; ++i)
         {
@@ -1449,27 +1589,58 @@ private:
             bypass = bypassT > bypass ? std::min (bypassT, bypass + byStep) : std::max (bypassT, bypass - byStep);
             glide (wg, wetT, dK);
             glide (dg, dryT, dK);
+            glide (trimG, trimT, dK * 0.25f);
             float bandScale[kBands];
             for (int b = 0; b < nb; ++b)
             {
                 glide (bandMixG[(size_t) b], bandMixT[(size_t) b], dK);
-                const float cd = compDelay[(size_t) b].process (comp[(size_t) b][(size_t) i], osLat);
-                bandScale[b] = cd * (float) std::pow (10.0, bandAutoDb[(size_t) b] / 20.0);
+                bandScale[b] = compDelay[(size_t) b].process (comp[(size_t) b][(size_t) i], osLat) * bandMixG[(size_t) b];
             }
             const float gk = guardDelay.process (guardRun[(size_t) i], osLat);   // aligned with the circuit's output
+            const float keep = 1.0f - gk;
+            // the vowels (unguarded): AUTO gives back exactly what the saturation took (measured, below); a guarded ess
+            // gets exactly the vowels' net change - the input's level with AUTO, the vowels' own loss without it
+            const float vowelGain = autoOn ? autoStaticLin * trimG : 1.0f;              // the table's estimate x the measured correction
+            const float essGain = autoOn ? 1.0f : 1.0f / (autoStaticLin * trimG);   // without AUTO: the vowels' own loss
+            const float aEff = vowelGain + gk * (essGain - vowelGain);
             double inSq = 0.0, outSq = 0.0;
             for (int c = 0; c < ch; ++c)
             {
-                double v = 0.0;
+                double squash = 0.0, harm = 0.0;
                 for (int b = 0; b < nb; ++b)
                 {
-                    const float clean = bandClean[(size_t) b][(size_t) c].process (cleanLine[(size_t) b][(size_t) c][(size_t) i], osLat);
-                    float wet = band[(size_t) b][(size_t) c][(size_t) i] * bandScale[b];
-                    if (gk > 0.0f)
-                        wet += gk * (clean * (guardGain > 0.0f ? guardGain : bandCleanGain[(size_t) b]) - wet);
-                    const float m = bandMixG[(size_t) b];
-                    v += m >= 1.0f ? wet : (double) clean + m * (wet - clean);
+                    const double cb = (double) band[(size_t) b][(size_t) c][(size_t) i] * bandScale[b];
+                    const double sb = bandInDelay[(size_t) b][(size_t) c].process (bandIn[(size_t) b][(size_t) c][(size_t) i], osLat) * bandMixG[(size_t) b];
+                    // two one-pole stages (2.5 ms each): the products' ripple at twice the signal's frequencies stays out
+                    // of the gain (a rippling gain would itself make sidebands)
+                    double& n1 = bgNum[(size_t) b][(size_t) c];
+                    double& d1 = bgDen[(size_t) b][(size_t) c];
+                    double& n2 = bgNum2[(size_t) b][(size_t) c];
+                    double& d2 = bgDen2[(size_t) b][(size_t) c];
+                    n1 += bgK * (cb * sb - n1);
+                    d1 += bgK * (sb * sb - d1);
+                    n2 += bgK * (n1 - n2);
+                    d2 += bgK * (d1 - d2);
+                    const double gsq = d2 > 1.0e-14 ? n2 / d2 : 0.0;
+                    squash += gsq * sb;
+                    double hb = cb - gsq * sb;
+                    if (focusOn)
+                        for (auto& f : fRb[(size_t) b])
+                            hb = f.process (hb, c);
+                    harm += harmAmtB[(size_t) b] * hb;
                 }
+                const double col = (squashAmt * squash + harm) * keep;   // after FOCUS: a guarded ess gets none of its filters' ring-out either
+                double pv = preDelay[(size_t) c].process (preLine[(size_t) c][(size_t) i], osLat);
+                if (nb >= 2)
+                {
+                    pv = apPre1.process (pv, c);
+                    if (nb == 3)
+                        pv = apPre2.process (pv, c);
+                }
+                double v = pv + col;
+                if (voicingOn)
+                    for (auto& f : vc)
+                        v = f.process (v, c);
                 if (highCutOn)
                 {
                     v = hc1.process (v, c);
@@ -1489,34 +1660,27 @@ private:
                 }
                 if (autoOn || active.ess)
                 {
-                    const double ka = kIn.process (dRaw, c), kb = kOut.process (v, c);
+                    const double ka = kIn.process (dRaw, c), kb = kOut.process (v, c);   // the wet before any gain
                     inSq += ka * ka;
                     outSq += kb * kb;
                 }
-                float y = (float) (wg * v + dg * dv) * fade;
+                float y = (float) (wg * v * aEff + dg * dv) * fade;
                 y = bypass >= 1.0f ? dRaw : (bypass > 0.0f ? y + bypass * (dRaw - y) : y);
                 io[c][i] = std::isfinite (y) ? y : 0.0f;
             }
-            if (active.ess && gk < 0.05f)
+            if ((autoOn || active.ess) && gk < 0.05f)
             {
-                // what the saturation gives this material (the unguarded parts): the loudness a guarded ess gets
-                gIn += lK * (inSq / ch - gIn);
-                gOut += lK * (outSq / ch - gOut);
-                if (gIn > 1.0e-8)
-                    ++gCount;
-                if (gCount > (int64_t) (0.3 * fs) && gIn > 1.0e-8 && gOut > 1.0e-12 && (trimTick & 31) == 0)
-                    guardGain = (float) std::sqrt (gOut / gIn);
-            }
-            if (autoOn)
-            {
+                // the loudness the saturation takes from the vowels: the integrated loudness (3 s) of the wet against the
+                // input's, on the unguarded parts only (a guarded ess never steers it); slow and bounded (no pumping)
                 lIn += lK * (inSq / ch - lIn);
                 lOut += lK * (outSq / ch - lOut);
                 if (lIn > 1.0e-8)
                     ++lCount;
                 if ((++trimTick & 31) == 0 && lCount > (int64_t) (0.5 * fs) && lIn > 1.0e-8 && lOut > 1.0e-12)
                 {
-                    trimDb = (float) std::clamp (10.0 * std::log10 (lIn / lOut), -4.0, 4.0);
-                    wetT = wetBase * (float) std::pow (10.0, trimDb / 20.0);
+                    const double lossDb = 10.0 * std::log10 (lOut / lIn);   // <= 0: what the vowels lost
+                    trimDb = (float) std::clamp (-lossDb - (double) autoStaticDb, -4.0, 4.0);   // the table's error, corrected
+                    trimT = (float) std::pow (10.0, trimDb / 20.0);
                 }
             }
         }
@@ -1530,21 +1694,29 @@ private:
 
     Params params;
     double fs = 48000.0;
-    int block = 512, activeBands = 1, wantBands = 1, look = 384, warm = 0, forcedEss = -1;
+    int block = 512, activeBands = 1, wantBands = 1, look = 384, preRoll = 96, warm = 0, forcedEss = -1;
     Config active, want;
     std::array<Stage, kBands> stages;
-    std::array<std::array<std::vector<float>, kMaxCh>, kBands> band, cleanLine;
+    std::array<std::array<std::vector<float>, kMaxCh>, kBands> band;
+    std::array<std::vector<float>, kMaxCh> preLine;
+    std::array<std::array<std::vector<float>, kMaxCh>, kBands> bandIn;
+    std::array<std::array<Delay, kMaxCh>, kBands> bandInDelay;
+    std::array<std::array<double, kMaxCh>, kBands> bgNum {}, bgDen {}, bgNum2 {}, bgDen2 {};
+    double bgK = 0.004, squashAmt = 1.0;
     std::array<std::vector<float>, kBands> comp;
     std::vector<float> dryIn, guardRun;
     Delay guardDelay;
-    std::array<Delay, kMaxCh> dryDelay, lookDelay;
-    std::array<std::array<Delay, kMaxCh>, kBands> bandClean;
+    std::array<Delay, kMaxCh> dryDelay, lookDelay, preDelay;
     std::array<Delay, kBands> compDelay;
     std::array<std::array<Biquad, 2>, 5> xo;
-    Biquad lowCut, thumpF, tiltLo, tiltHi, hc1, hc2, hc3, air, apDry1, apDry2;
-    bool lowCutOn = false, thumpOn = false, toneOn = false, highCutOn = false, airOn = false, autoOn = true;
+    Biquad lowCut, thumpF, tiltLo, tiltHi, hc1, hc2, hc3, air, apDry1, apDry2, apPre1, apPre2;
+    std::array<std::array<Biquad, 8>, kBands> fRb;
+    std::array<double, kBands> harmAmtB { 1.0, 1.0, 1.0 };
+    std::array<Biquad, 6> vc;
+    bool lowCutOn = false, thumpOn = false, toneOn = false, highCutOn = false, airOn = false, autoOn = true, focusOn = true, voicingOn = true;
+    float autoStatic = 1.0f, autoStaticLin = 1.0f, autoStaticDb = 0.0f, trimT = 1.0f, trimG = 1.0f, colourLoss = 1.0f;
     float driveDb = 6.0f, driveT = 1, driveG = 1, wetT = 1, wetG = 1, dryT = 0, dryG = 0, heatDb = -100.0f, wetBase = 1.0f;
-    std::array<float, kBands> bandDb {}, bandDbG {}, bandAutoDb {}, bandCleanGain { 1, 1, 1 }, bandMixT { 1, 1, 1 }, bandMixG { 1, 1, 1 };
+    std::array<float, kBands> bandDb {}, bandDbG {}, bandAutoDb {}, bandMixT { 1, 1, 1 }, bandMixG { 1, 1, 1 };
     float dynK = 0.0f, env = 0.0f, envA = 0, envR = 0, dK = 0.001f;
     axell::voice::SibilanceDetector ess;
     float essP = 0.0f, guardDb = 0.0f, guardMax = 0.0f, gA = 0, gR = 0, inputDb = 0.0f;
@@ -1554,13 +1726,13 @@ private:
     std::atomic<bool> learnReq { false }, learning { false }, learnDone { false };
     std::atomic<float> learnedLufs { -70.0f };
     axell::KWeighting kIn, kOut;
-    double lIn = 0.0, lOut = 0.0, lK = 0.0, gIn = 0.0, gOut = 0.0;
-    int64_t lCount = 0, gCount = 0;
-    float guardGain = 0.0f;   // 0 = not measured yet (the table's estimate meanwhile)
+    double lIn = 0.0, lOut = 0.0, lK = 0.0;
+    int64_t lCount = 0;
     uint32_t trimTick = 0;
     float trimDb = 0.0f;
     axell::LatencyHandshake hs;
     std::atomic<int> latencyPub { 0 };
+    std::atomic<float> dynPub { 0.0f };
     float fade = 1.0f, fadeTgt = 1.0f, fadeStep = 0.01f, bypass = 0.0f, bypassT = 0.0f, byStep = 0.01f;
 };
 } // namespace afs

@@ -213,6 +213,7 @@ static Params style (int s, float drive, int q = 2)
     p.driveDb = drive;
     p.autoGain = false;
     p.quality = q;
+    p.voicing = false;   // 4.0: the circuits' tests without the seal's tone (VOICING has its own)
     return p;
 }
 
@@ -340,10 +341,12 @@ static void testHarmonics (double fs)
     check ("FOLD: OFFSET 50 -> 100 raises the 2nd harmonic (+12 dB)" + R (fs), h (kFold, 12.0f, 100.0f, 2) - h (kFold, 12.0f, 50.0f, 2), 40.0, 400.0, "dB");
     // THD grows with DRIVE
     int monotone = 0;
+    std::string bad;
     for (int s = 0; s < kNumStyles; ++s)
     {
         double prev = -400;
         bool ok = true;
+        std::string trace;
         for (float d : { 0.0f, 8.0f, 16.0f, 24.0f })
         {
             Params p = style (s, d);
@@ -352,12 +355,15 @@ static void testHarmonics (double fs)
             for (int k = 2; k <= 9; ++k)
                 hsum += std::pow (amp (y[0], fs, 1000.0 * k), 2.0);
             const double thd = 10.0 * std::log10 (hsum + 1e-30) - db (amp (y[0], fs, 1000.0));
-            ok = ok && thd > prev - 1.5;   // class AB (PENTODE): crossover distortion is largest at low levels
+            ok = ok && thd > prev - (s == kPentode ? 5.5 : 1.5);   // class AB (PENTODE): the crossover gap is the largest share of a small signal
             prev = thd;
+            trace += " " + std::to_string ((int) std::lround (thd));
         }
         monotone += ok ? 1 : 0;
+        if (! ok)
+            bad += std::string (" ") + styleName (s) + " (THD" + trace + " dB)";
     }
-    check ("every style: distortion grows with DRIVE (styles that do)" + R (fs), monotone, kNumStyles, kNumStyles, "");
+    check ("every style: distortion grows with DRIVE" + (bad.empty() ? std::string() : " - not:" + bad) + R (fs), monotone, kNumStyles, kNumStyles, "");
 }
 
 static void testSafety (double fs)
@@ -538,7 +544,7 @@ static void testEssGuard (double fs)
         {
             if (force)
             {
-                const long at = (long) pos + 32 - (q.essGuard > 0.0f ? (long) e.essLookAhead() : 0);   // the sample leaving the look-ahead
+                const long at = (long) pos + 32 - (q.essGuard > 0.0f ? (long) e.essDecisionLag() : 0);   // the sample the network decides on now
                 e.forceEssDecision (at >= 0 && (size_t) at < kind.size() && kind[(size_t) at] == 2 ? 1 : 0);
             }
             float* io[2] = { y[0].data() + pos, y[1].data() + pos };
@@ -570,6 +576,25 @@ static void testEssGuard (double fs)
             if (kind[i] == 2) { const double e = y[0][i] - gm * x[0][i]; num += e * e; }
         return 10.0 * std::log10 (num / den / (gm * gm) + 1e-30);
     };
+    std::printf ("      esses' distortion re the input: guard off %.1f dB, on %.1f dB\n", distortion (off), distortion (on));
+    {
+        // where the guarded esses' residue is: the first 5 ms of each ess, the rest
+        double cross = 0, den = 0;
+        for (size_t i = (size_t) (1.2 * fs); i < on[0].size(); ++i)
+            if (kind[i] == 2) { cross += (double) on[0][i] * x[0][i]; den += (double) x[0][i] * x[0][i]; }
+        const double gm = cross / den;
+        double eOn = 0, eRest = 0, dOn = 0, dRest = 0;
+        size_t since = 0;
+        for (size_t i = (size_t) (1.2 * fs); i < on[0].size(); ++i)
+        {
+            since = kind[i] == 2 ? since + 1 : 0;
+            if (kind[i] != 2) continue;
+            const double e = on[0][i] - gm * x[0][i], d = (double) x[0][i] * x[0][i];
+            if (since < (size_t) (0.005 * fs)) { eOn += e * e; dOn += d; } else { eRest += e * e; dRest += d; }
+        }
+        std::printf ("      guarded residue: first 5 ms %.1f dB (of all ess energy), the rest %.1f dB; gain fit %.3f\n",
+                     10.0 * std::log10 (eOn / den + 1e-30), 10.0 * std::log10 (eRest / den + 1e-30), gm);
+    }
     check ("ESS GUARD 100 %: the esses' distortion (residual re the input) re ESS GUARD off" + R (fs), distortion (on) - distortion (off), -400.0, -15.0, "dB");
 }
 
@@ -588,11 +613,166 @@ static void testDynamics (double fs)
         return db (amp (seg, fs, 1500.0) / amp (seg, fs, 500.0));
     };
     Params p = style (kTape, 12.0f);
+    p.focus = 0.0f;   // the 3rd harmonic of 500 Hz lands where FOCUS keeps the colour out
     Params up = p, dn = p;
     up.dynamics = 100.0f;
     dn.dynamics = -100.0f;
     check ("DYNAMICS +100: the loud part distorts more (3rd harmonic, re 0)" + R (fs), thd (up, 1.55) - thd (p, 1.55), 3.0, 400.0, "dB");
     check ("DYNAMICS -100: the quiet part distorts more (3rd harmonic, re 0)" + R (fs), thd (dn, 1.05) - thd (p, 1.05), 3.0, 400.0, "dB");
+}
+
+// 4.0 - decoupled saturation: the voice untouched, VOICING's curve, FOCUS's placement, a steady sound gives a steady
+// output (no flutter, pumping or crackle), ESS GUARD switching adds nothing
+static double bandRms (const std::vector<float>& x, double fs, double lo, double hi, size_t from, size_t to)
+{
+    Biquad h1, h2, l1, l2;
+    h1.highPass (fs, lo, 0.7071); h2.highPass (fs, lo, 0.7071);
+    l1.lowPass (fs, hi, 0.7071); l2.lowPass (fs, hi, 0.7071);
+    double e = 0;
+    for (size_t i = 0; i < x.size(); ++i)
+    {
+        const double y = l2.process (l1.process (h2.process (h1.process (x[i], 0), 0), 0), 0);
+        if (i >= from && i < to) e += y * y;
+    }
+    return 10.0 * std::log10 (e / (double) std::max<size_t> (1, to - from) + 1e-30);
+}
+static Buf steadyVowel (double fs, double sec)
+{
+    Buf x (2, std::vector<float> ((size_t) (sec * fs)));
+    double e = 0;
+    for (size_t i = 0; i < x[0].size(); ++i)
+    {
+        double v = 0;
+        for (int h = 1; h <= 40; ++h)
+        {
+            const double f = 150.0 * h;
+            if (f > 0.45 * fs) break;
+            const double fm = std::exp (-std::pow ((f - 700.0) / 400.0, 2)) + 0.5 * std::exp (-std::pow ((f - 2500.0) / 900.0, 2)) + 0.05;
+            v += fm / h * std::sin (2.0 * kPi * f * (double) i / fs + 0.7 * h * h);
+        }
+        x[0][i] = x[1][i] = (float) v;
+        e += v * v;
+    }
+    const double g = std::pow (10.0, -18.0 / 20.0) / std::sqrt (e / (double) x[0].size());
+    for (auto& c : x) for (auto& v : c) v = (float) (v * g);
+    return x;
+}
+static void testDecoupled (double fs)
+{
+    const auto vx = voice (fs, 3.0);
+    // the voice untouched: at -60 dBFS (no saturation) every circuit gives the input back (VOICING off)
+    {
+        Buf q = vx;
+        for (auto& c : q) for (auto& v : c) v *= 0.001f;   // -78 dBFS RMS: -18 - 60
+        double worst = -400;
+        int ws = 0;
+        for (int s = 0; s < kNumStyles; ++s)
+        {
+            Params p = style (s, 0.0f);
+            const auto y = render (fs, p, q);
+            double e = 0, r = 0;
+            for (size_t i = (size_t) (0.3 * fs); i < y[0].size(); ++i) { const double d = y[0][i] - q[0][i]; r += d * d; e += (double) q[0][i] * q[0][i]; }
+            const double rel = 10.0 * std::log10 (r / e + 1e-30);
+            if (s == kTape)
+                // magnetic hysteresis is not linear even at the smallest levels (the Rayleigh region): its loop stays
+                check ("4.0 the voice untouched: TAPE, a voice 60 dB down, out - in (the loop at -130 dBFS)" + R (fs), rel, -400.0, -50.0, "dB");
+            else if (rel > worst) { worst = rel; ws = s; }
+        }
+        // (the push-pull PENTODE's bias leaves its smallest-signal gain 0.02 dB off unity: the crossover region)
+        check (std::string ("4.0 the voice untouched: a voice 60 dB down, every other style, out - in (largest: ") + styleName (ws) + ")" + R (fs), worst, -400.0, -50.0, "dB");
+    }
+    // VOICING: + weight, - honk, + air, the presence untouched (small signal)
+    {
+        auto gain = [&] (double f, bool v) { Params p = style (kTriode, 0.0f); p.voicing = v; const auto y = render (fs, p, sine (fs, f, -60.0, 0.5)); return db (amp (y[0], fs, f) / 0.001); };
+        check ("4.0 VOICING: weight at 60 Hz" + R (fs), gain (60.0, true) - gain (60.0, false), 1.3, 2.0, "dB");
+        check ("4.0 VOICING: the honk range eased at 1.2 kHz" + R (fs), gain (1200.0, true) - gain (1200.0, false), -1.65, -1.3, "dB");
+        check ("4.0 VOICING: presence at 4 kHz near flat" + R (fs), gain (4000.0, true) - gain (4000.0, false), -0.6, 0.3, "dB");
+        check ("4.0 VOICING: a breath of air (15 kHz)" + R (fs), gain (15000.0, true) - gain (15000.0, false), 0.5, 1.1, "dB");
+    }
+    // FOCUS: where the new harmonics land (a tone's harmonics are all new: none of them is a gain of the input)
+    {
+        auto harm = [&] (float focus, double f0, int k) {
+            Params p = style (kTriode, 12.0f);
+            p.focus = focus;
+            const auto y = render (fs, p, sine (fs, f0, -18.0, 0.5));
+            return db (amp (y[0], fs, f0 * k) / amp (y[0], fs, f0));
+        };
+        // placement, independent of the harmonics' overall level (FOCUS also sets that, per circuit): the box harmonic re the
+        // bite harmonic of the same tone, the fizz harmonic re a bite harmonic of the same tone
+        const double box = harm (100.0f, 400.0, 3) - harm (0.0f, 400.0, 3), bite = harm (100.0f, 400.0, 8) - harm (0.0f, 400.0, 8);
+        check ("4.0 FOCUS: 400 Hz's 3rd harmonic (1.2 kHz: the box) re its 8th (3.2 kHz: the bite), re FOCUS 0" + R (fs), box - bite, -400.0, -10.0, "dB");
+        const double fizz = harm (100.0f, 1000.0, 11) - harm (0.0f, 1000.0, 11), bite2 = harm (100.0f, 1000.0, 4) - harm (0.0f, 1000.0, 4);
+        check ("4.0 FOCUS: 1 kHz's 11th harmonic (11 kHz: the fizz) re its 4th (4 kHz: the bite), re FOCUS 0" + R (fs), fizz - bite2, -400.0, -5.0, "dB");
+        check ("4.0 FOCUS: 60 Hz's 2nd harmonic (120 Hz: the weight) as voiced, re FOCUS 0" + R (fs), harm (100.0f, 60.0, 2) - harm (0.0f, 60.0, 2), -18.0, 2.0, "dB");
+    }
+    // a steady vowel in: a steady output (20 ms full band, 5 ms above 6 kHz), every style, AUTO on, VOICING on;
+    // also DYNAMICS +-100, ESS GUARD (the network listening), LIVE
+    {
+        const auto sv = steadyVowel (fs, 6.0);
+        auto spread = [&] (const Params& p, double frameSec, double lo, double hi) {
+            const auto y = render (fs, p, sv);
+            const size_t fr = (size_t) (frameSec * fs);
+            double mn = 1e9, mx = -1e9;
+            for (size_t a = (size_t) (3.5 * fs); a + fr <= (size_t) (5.5 * fs); a += fr)
+            {
+                const double v = bandRms (y[0], fs, lo, hi, a, a + fr);
+                mn = std::min (mn, v); mx = std::max (mx, v);
+            }
+            return mx - mn;
+        };
+        double wf = 0, wh = 0;
+        std::string nf, nh;
+        auto consider = [&] (const Params& p, const std::string& name) {
+            // frames of whole periods (the vowel is periodic: 150 Hz, 3 periods = 20 ms): a periodic output reads the same in each
+            const double a = spread (p, 0.02, 20.0, 0.45 * fs), b = spread (p, 0.02, 6000.0, std::min (16000.0, 0.45 * fs));
+            if (a > wf) { wf = a; nf = name; }
+            if (b > wh) { wh = b; nh = name; }
+        };
+        for (int s = 0; s < kNumStyles; ++s)
+        {
+            Params p = style (s, 18.0f);
+            p.autoGain = true;
+            p.voicing = true;
+            consider (p, styleName (s));
+        }
+        Params p = style (kTriode, 18.0f);
+        p.autoGain = true;
+        Params d1 = p; d1.dynamics = 100.0f; consider (d1, "DYNAMICS +100");
+        Params d2 = p; d2.dynamics = -100.0f; consider (d2, "DYNAMICS -100");
+        Params g1 = p; g1.essGuard = 100.0f; consider (g1, "ESS GUARD");
+        Params l1 = p; l1.quality = 4; consider (l1, "LIVE");
+        check ("4.0 a steady vowel: a steady output, 20 ms frames, full band (largest: " + nf + ")" + R (fs), wf, 0.0, 0.25, "dB");
+        check ("4.0 a steady vowel: a steady output, 20 ms frames above 6 kHz (largest: " + nh + ")" + R (fs), wh, 0.0, 0.25, "dB");
+    }
+    // ESS GUARD switching on a steady vowel (the decision forced on and off every 50 ms): the colour only fades, so the
+    // highs never rise above the unguarded output's (no click)
+    {
+        const auto sv = steadyVowel (fs, 4.0);
+        auto hfPeak = [&] (bool toggle) {
+            Params p = style (kTriode, 18.0f);
+            p.essGuard = 100.0f;
+            Engine e;
+            e.setParams (p);
+            e.prepare (fs, 64);
+            e.setParams (p);
+            const int lat = e.latencySamples();
+            Buf y = sv;
+            for (auto& c : y) c.resize (y[0].size() + (size_t) lat, 0.0f);
+            for (size_t pos = 0; pos < y[0].size(); pos += 64)
+            {
+                e.forceEssDecision (toggle ? (int) ((pos / (size_t) (0.05 * fs)) & 1) : 0);
+                float* io[2] = { y[0].data() + pos, y[1].data() + pos };
+                e.process (io, 2, (int) std::min<size_t> (64, y[0].size() - pos));
+            }
+            for (auto& c : y) c.erase (c.begin(), c.begin() + lat);
+            const size_t fr = (size_t) (0.001 * fs);
+            double mx = -1e9;
+            for (size_t a = (size_t) (1.5 * fs); a + fr <= (size_t) (3.8 * fs); a += fr)
+                mx = std::max (mx, bandRms (y[0], fs, 6000.0, std::min (16000.0, 0.45 * fs), a, a + fr));
+            return mx;
+        };
+        check ("4.0 ESS GUARD switching every 50 ms on a steady vowel: the highs' 1 ms peak re unguarded (no click)" + R (fs), hfPeak (true) - hfPeak (false), -400.0, 0.5, "dB");
+    }
 }
 
 static void testAllocAndCpu (bool quick)
@@ -639,6 +819,7 @@ int main (int argc, char** argv)
         testBands (fs);
         testEssGuard (fs);
         testDynamics (fs);
+        testDecoupled (fs);
     }
     testAllocAndCpu (quick);
     const double sec = std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();

@@ -15,7 +15,7 @@
 	name = Axell Forbidden Seal
 	category = Audio Module Class
 	subCategories = Fx|Distortion
-	version = 3.0.1
+	version = 4.0.0
 	sdkVersion = VST 3.8.0
 	cid = ABCDEF019182FAEB4178796246736C31
 
@@ -23,7 +23,7 @@
 	name = Axell Forbidden Seal
 	category = Component Controller Class
 	subCategories = Fx|Distortion
-	version = 3.0.1
+	version = 4.0.0
 	sdkVersion = VST 3.8.0
 	cid = ABCDEF011234ABCD4178796246736C31
 
@@ -59,7 +59,7 @@ Info:  => Event Buses: [0 In(s) => 0 Out(s)]
 
 [Scan Parameters]
 Info:  ===Scan Parameters ====================================
-Info:  This component exports 31 parameter(s)
+Info:  This component exports 33 parameter(s)
 Info:     Parameter 000 (id=109780401): [title="Style"] [unit=""] [type = Discrete, default = 0.142857, unit = 0]
 Info:     Parameter 001 (id=95852938): [title="Drive"] [unit=""] [type = Float, default = 0.200000, unit = 0]
 Info:     Parameter 002 (id=1170414805): [title="Punish"] [unit=""] [type = Toggle, default = 0.000000, unit = 0]
@@ -91,9 +91,11 @@ Info:     Parameter 025 (id=92101771): [title="High Mix"] [unit=""] [type = Floa
 Info:     Parameter 026 (id=1443276820): [title="Dynamics"] [unit=""] [type = Float, default = 0.500000, unit = 0]
 Info:     Parameter 027 (id=127914016): [title="Ess Guard"] [unit=""] [type = Float, default = 0.000000, unit = 0]
 Info:     Parameter 028 (id=100358090): [title="Input"] [unit=""] [type = Float, default = 0.500000, unit = 0]
-Info:     Parameter 029 (id=1652125811): [title="Bypass"] [unit=""] [type = Toggle, default = 0.000000, unit = 0]
-Info:     Parameter 030 (id=1886548852): [title="Program"] [unit=""] [type = Discrete, default = 0.000000, unit = 0]
-Info:  =>Parameter 030 (id=1886548852) is kIsProgramChange, but not a kIsList!
+Info:     Parameter 029 (id=97604824): [title="Focus"] [unit=""] [type = Float, default = 1.000000, unit = 0]
+Info:     Parameter 030 (id=629111151): [title="Voicing"] [unit=""] [type = Toggle, default = 1.000000, unit = 0]
+Info:     Parameter 031 (id=1652125811): [title="Bypass"] [unit=""] [type = Toggle, default = 0.000000, unit = 0]
+Info:     Parameter 032 (id=1886548852): [title="Program"] [unit=""] [type = Discrete, default = 0.000000, unit = 0]
+Info:  =>Parameter 032 (id=1886548852) is kIsProgramChange, but not a kIsList!
 [Succeeded]
 
 [MIDI Mapping]
