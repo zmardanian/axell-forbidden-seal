@@ -8,6 +8,9 @@
 
 #include <cstdio>
 #include <random>
+#include <thread>
+#include <atomic>
+#include <chrono>
 
 namespace
 {
@@ -350,6 +353,67 @@ int main()
         ed.reset();
         std::unique_ptr<juce::AudioProcessorEditor> ed2 (p.createEditor());
         check (ed2->getWidth() == gui::kWidth * 3 / 2, "editor: re-opens at the last used size (150 %)");
+    }
+
+    //== automation fuzz, as pluginval's Automation test does it (and more of it): every 32 samples up to 10 random
+    //   parameters jump to random values while noise plays, at three rates and five block sizes; the output must stay
+    //   finite every time. Fixed seeds, so a failure repeats.
+    {
+        int bad = 0;
+        long resets = 0;
+        const long boundedBefore = afs::TransformerCore::bounded.load();
+        juce::String first;
+        for (double sr : { 44100.0, 48000.0, 96000.0 })
+            for (int bs : { 64, 128, 256, 512, 1024 })
+            {
+                SealProcessor p;
+                juce::Random r ((juce::int64) (sr * 7 + bs));
+                p.releaseResources();
+                prepare (p, sr, bs);
+                auto& params = p.getParameters();
+                juce::AudioBuffer<float> ab (2, bs);
+                juce::MidiBuffer mb;
+                // audio on its own thread while this (the message) thread runs the timers - the latency handshake
+                // and LEARN answer as in a host
+                std::atomic<bool> running { true };
+                std::thread audio ([&]
+                {
+                for (int blockNo = 0; blockNo < 60; ++blockNo)
+                    for (int done = 0; done < bs; done += 32)
+                    {
+                        for (int k = 0; k < juce::jmin (10, params.size()); ++k)
+                            params[r.nextInt (params.size())]->setValueNotifyingHost (r.nextFloat());
+                        const int n = juce::jmin (32, bs - done);
+                        juce::AudioBuffer<float> sub (ab.getArrayOfWritePointers(), 2, done, n);
+                        for (int c = 0; c < 2; ++c)
+                            for (int i = 0; i < n; ++i)
+                                sub.setSample (c, i, r.nextFloat() * 2.0f - 1.0f);
+                        p.processBlock (sub, mb);
+                        bool finite = true;
+                        for (int c = 0; c < 2; ++c)
+                            for (int i = 0; i < n; ++i)
+                                finite = finite && std::isfinite (sub.getSample (c, i));
+                        if (! finite && bad++ == 0)
+                        {
+                            first << juce::String (sr, 0) << " Hz, block " << bs << ", sub-block " << blockNo << "/" << done << ":";
+                            for (auto* prm : params)
+                                if (auto* wp = dynamic_cast<juce::AudioProcessorParameterWithID*> (prm))
+                                    first << " " << wp->getParameterID() << "=" << prm->getCurrentValueAsText();
+                        }
+                        std::this_thread::sleep_for (std::chrono::microseconds (200));   // a host's callback pace, roughly
+                    }
+                running = false;
+                });
+                while (running)
+                    pumpMessages (5);
+                audio.join();
+                resets += p.modelResets();
+            }
+        check (bad == 0 && resets == 0, "automation fuzz (pluginval's Automation on an audio thread, the timers running; 60 blocks"
+                         " x 15 rate/block sizes): output always finite, no circuit model ever broke (transformer flux bound held "
+                         + juce::String (afs::TransformerCore::bounded.load() - boundedBefore) + " samples at the extremes)"
+                         + (bad > 0 ? " - " + juce::String (bad) + " non-finite sub-blocks, first at " + first : juce::String())
+                         + (resets > 0 ? " - " + juce::String (resets) + " model resets" : juce::String()));
     }
 
     if (failures == 0)

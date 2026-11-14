@@ -1,5 +1,25 @@
 # Changelog
 
+## 4.0.1 - 2026-11-15
+A fix found by a deeper analysis (a pluginval build with AddressSanitizer, then a host-like test of our own); the
+sound is unchanged wherever 4.0.0 worked.
+- **Fixed: a crash at extreme settings.** With the core of IRON or CONSOLE driven thousands of times over full scale
+  (DRIVE +30 dB with PUNISH, INPUT +24 dB and a band's drive +18 dB), the transformer model's step became unstable,
+  its flux overflowed to NaN, and the NaN was used as an index into the circuit's curve table - a read far outside
+  it, which crashed the host. Now the flux is held where the step is stable (bounded from the model's own stiffness:
+  never reached in normal use) and a curve table never turns a NaN into an index. At those settings 4.0.1 keeps
+  playing a saturated sound where 4.0.0 crashed.
+- **Measured unchanged**: 264 renders through the independent host - every STYLE, every QUALITY, DRIVE 0 / +15 / +30
+  dB, one and three bands, all 24 presets - are bit-identical to 4.0.0.
+- **New test**: an automation fuzz like pluginval's (every 32 samples up to 10 parameters jump to random values while
+  noise plays, at 44.1 / 48 / 96 kHz and blocks 64 - 1024), with the audio on its own thread and the host's timers
+  running: no circuit model may ever break (0 resets) and the output stays finite.
+- **Hosts on Linux**: a JUCE bug in VST3 *hosting* (the run loop) could crash a JUCE-based host when it deleted the
+  plugin (pluginval at exit, ~15 % of runs with this plugin's busy editor and timers). It is fixed in the Axell
+  core's build (the Dojo and the test hosts); DAWs that run their own loop (REAPER, Bitwig, ...) were never affected.
+- Verified: DSP 220/220, plugin 33/33 (the new fuzz included), ASan + UBSan clean, independent audit 63/63,
+  pluginval strictness 10.
+
 ## 4.0.0 - 2026-10-30
 A new engine and a new face, after the artist heard 3.0.1 on their own vocal and judged it boxy, harsh and glitchy -
 and measurement confirmed why.

@@ -215,16 +215,16 @@ PASS  4.0 a steady vowel: a steady output, 20 ms frames, full band (largest: DYN
 PASS  4.0 a steady vowel: a steady output, 20 ms frames above 6 kHz (largest: DYNAMICS +100) @ 96.0 kHz         0.0028 dB  [0 .. 0.25]
 PASS  4.0 ESS GUARD switching every 50 ms on a steady vowel: the highs' 1 ms peak re unguarded (no click) @ 96.0 kHz     -1.8925 dB  [-400 .. 0.5]
 PASS  no memory allocation in process() (every preset, random blocks)                                           0.0000 allocs  [0 .. 0]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, TAPE (% of one core)                                  6.3181 %  [0 .. 25]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, TRIODE (% of one core)                                3.3149 %  [0 .. 25]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, PENTODE (% of one core)                               4.1407 %  [0 .. 25]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, CONSOLE (% of one core)                               3.6477 %  [0 .. 25]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, GERMANIUM (% of one core)                             3.3790 %  [0 .. 25]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, IRON (% of one core)                                  3.5744 %  [0 .. 25]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, DIODE (% of one core)                                 3.2280 %  [0 .. 25]
-PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, FOLD (% of one core)                                  3.1594 %  [0 .. 25]
-PASS  CPU, 3 BANDS + ESS GUARD (Vocal: Split Warmth), Best (8x), 128-sample blocks (% of one core)             13.2070 %  [0 .. 40]
-ALL PASS: 220 of 220 checks passed (198.8 s)
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, TAPE (% of one core)                                  6.2906 %  [0 .. 25]
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, TRIODE (% of one core)                                3.3273 %  [0 .. 25]
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, PENTODE (% of one core)                               4.1216 %  [0 .. 25]
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, CONSOLE (% of one core)                               3.6215 %  [0 .. 25]
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, GERMANIUM (% of one core)                             3.3623 %  [0 .. 25]
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, IRON (% of one core)                                  3.5884 %  [0 .. 25]
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, DIODE (% of one core)                                 3.2062 %  [0 .. 25]
+PASS  CPU, stereo @ 48 kHz, Best (8x), 128-sample blocks, FOLD (% of one core)                                  3.1421 %  [0 .. 25]
+PASS  CPU, 3 BANDS + ESS GUARD (Vocal: Split Warmth), Best (8x), 128-sample blocks (% of one core)             13.2263 %  [0 .. 40]
+ALL PASS: 220 of 220 checks passed (193.4 s)
 PASS  parameter count = 31
 PASS  every parameter in its frozen place, version hint 1 (1.0) / 2 (2.0) / 3 (3.0) / 4 (4.0)
 PASS  defaults = the engine's defaults (= the Init preset), QUALITY Best (8x)
@@ -257,4 +257,5 @@ PASS  mono, blocks larger than announced: processes, finite
 PASS  editor: opens / closes 5x while processing (100 % size)
 PASS  editor: resizable 75-200 %
 PASS  editor: re-opens at the last used size (150 %)
-ALL PASS: 32 of 32 plugin checks passed
+PASS  automation fuzz (pluginval's Automation on an audio thread, the timers running; 60 blocks x 15 rate/block sizes): output always finite, no circuit model ever broke (transformer flux bound held 637 samples at the extremes)
+ALL PASS: 33 of 33 plugin checks passed

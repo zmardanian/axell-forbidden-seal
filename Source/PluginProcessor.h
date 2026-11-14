@@ -57,6 +57,7 @@ public:
     void startLearn() noexcept { dsp.startLearn(); }
     bool learningNow() const noexcept { return dsp.learningNow(); }
     float dynamicsNow() const noexcept { return dsp.dynamicsNow(); }
+    long modelResets() const noexcept { return dsp.resetCount(); }   // circuit models reset after breaking (tests)
     juce::String learnedText;   // message thread
 
 private:

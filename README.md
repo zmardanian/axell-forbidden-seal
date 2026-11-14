@@ -90,16 +90,17 @@ vowels alone - a guarded ess never steers it.
 host (the handshake waits for the host before a new latency plays). MIX 0 and host bypass give the input delayed by it.
 **CPU** (stereo, 48 kHz, Best 8x, 128-sample blocks): 3.2 - 6.3 % of one core per style; three bands + ESS GUARD 13 %.
 
-**Verified for 4.0.0**: DSP 220, plugin 32, ASan + UBSan clean, independent audit 63/63, core 143, pluginval strictness 10,
+**Verified for 4.0.1**: DSP 220, plugin 33 (an automation fuzz added: 4.0.1 fixes a crash at extreme drive, the sound
+unchanged - 264 renders bit-identical to 4.0.0), ASan + UBSan clean, independent audit 63/63, core 143, pluginval strictness 10,
 Steinberg's VST3 validator 47/47.
 
 ## Install (Linux)
 
-Download `AxellForbiddenSeal-4.0.0-linux-x86_64.tar.gz` from the
+Download `AxellForbiddenSeal-4.0.1-linux-x86_64.tar.gz` from the
 [latest release](https://github.com/zmardanian/axell-forbidden-seal/releases/latest) (optional: `sha256sum -c SHA256SUMS.txt`), then:
 
-    tar xzf AxellForbiddenSeal-4.0.0-linux-x86_64.tar.gz
-    cd AxellForbiddenSeal-4.0.0-linux-x86_64
+    tar xzf AxellForbiddenSeal-4.0.1-linux-x86_64.tar.gz
+    cd AxellForbiddenSeal-4.0.1-linux-x86_64
     ./install.sh
 
 Then in REAPER: Options > Preferences > Plug-ins > VST > Re-scan. On a vocal: press LEARN while the take plays, pick a

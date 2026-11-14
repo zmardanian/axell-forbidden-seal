@@ -193,6 +193,8 @@ struct Table
     }
     float operator() (float x) const noexcept
     {
+        if (std::isnan (x))
+            return 0.0f;   // 4.0.1: a NaN would become an index far outside the table (the engine resets the model)
         if (x <= -r)
             return v.front() + (x + r) * slopeLo;
         if (x >= r)
@@ -206,6 +208,8 @@ struct Table
     double integral (double x) const noexcept
     {
         const int n = (int) v.size();
+        if (std::isnan (x))
+            return 0.0;    // 4.0.1: as operator()
         if (x <= -r)
         {
             const double d = x + r;
@@ -568,16 +572,21 @@ private:
 // transformer core: v_core = v - wc phi (1 + K (phi/phiS)^2), phi' = v_core (trapezoid, one fixed-point pass)
 struct TransformerCore
 {
-    double T = 1.0 / 192000.0, wc = 1.0, phiS = 1.0, K = 24.0;
+    double T = 1.0 / 192000.0, wc = 1.0, phiS = 1.0, K = 24.0, rMax = 8.0, phiMax = 8.0;
     std::array<double, kMaxCh> phi {}, phiL {};
     void prepare (double fs, double hpfHz, double satHz, double k)
     {
         T = 1.0 / fs;
         wc = 2.0 * kPi * hpfHz;
-        setSat (satHz);
         K = k;
+        // 4.0.1: the step's stiffness grows with the flux, wc (1 + 3 K r^2) for r = phi / phiS; past
+        // T wc (1 + 3 K r^2) = 2 the explicit step diverges (NaN). The flux is bounded where that product is 1:
+        // r ~ 8 at the lowest rate (2x of 44.1 kHz), never reached in use (r ~ 2-3 at full DRIVE), only when
+        // DRIVE + PUNISH + INPUT + band drive push the core thousands of times over full scale
+        rMax = std::sqrt (std::max (1.0, 1.0 / (T * wc) - 1.0) / (3.0 * K));
+        setSat (satHz);
     }
-    void setSat (double satHz) noexcept { phiS = 1.0 / (2.0 * kPi * satHz); }
+    void setSat (double satHz) noexcept { phiS = 1.0 / (2.0 * kPi * satHz); phiMax = rMax * phiS; }
     void reset() noexcept { phi.fill (0.0); phiL.fill (0.0); }
     // the same core without saturation (its small-signal response: a first-order high pass), same integration
     double linear (double v, int ch) noexcept
@@ -594,9 +603,12 @@ struct TransformerCore
         auto core = [&] (double ph) { const double r = ph / phiS; return v - wc * ph * (1.0 + K * r * r); };
         const double vc0 = core (p);
         const double vc = 0.5 * (vc0 + core (p + T * vc0));
-        p += T * vc;
+        p = std::clamp (p + T * vc, -phiMax, phiMax);
+        if (std::abs (p) >= phiMax)
+            ++bounded;
         return vc;
     }
+    inline static std::atomic<long> bounded { 0 };   // how often the bound held the flux (diagnostics, tests)
 };
 
 // CONSOLE =====================================================================================================
@@ -1217,6 +1229,8 @@ public:
     }
 
     float heat() const noexcept { return heatDb; }
+    // how often a circuit model broke (non-finite) inside a block and was reset - 0 in a healthy run (tests)
+    long resetCount() const noexcept { return modelResets.load (std::memory_order_relaxed); }
     // DYNAMICS: the drive's offset right now (dB, any thread; for the display)
     float dynamicsNow() const noexcept { return dynPub.load (std::memory_order_relaxed); }
     float essProbability() const noexcept { return essP; }
@@ -1687,12 +1701,15 @@ private:
         wetG = wg;
         dryG = dg;
         const bool broken = ! std::isfinite (heatDiff) || ! std::isfinite (heatIn);
+        if (broken)
+            modelResets.fetch_add (1, std::memory_order_relaxed);
         for (auto& st : stages)
             st.resetModelsIfBroken (broken);
         heatDb = heatIn > 1.0e-12 ? (float) (10.0 * std::log10 (heatDiff / heatIn + 1.0e-12)) : -100.0f;
     }
 
     Params params;
+    std::atomic<long> modelResets { 0 };
     double fs = 48000.0;
     int block = 512, activeBands = 1, wantBands = 1, look = 384, preRoll = 96, warm = 0, forcedEss = -1;
     Config active, want;

@@ -14,6 +14,7 @@ elif [ -e "$PUB" ]; then echo "$PUB exists but is not a git repository - remove 
 mkdir -p "$PUB/tests/independent" "$PUB/docs" "$PUB/external/axell-core"
 for f in CMakeLists.txt LICENSE README.md CHANGELOG.md THIRD_PARTY_NOTICES.md; do cp "$f" "$PUB/"; done
 cp -r Source scripts .github "$PUB/"   # .github: the CI workflow (GitHub Actions)
+mkdir -p "$PUB/tools"; cp tools/xplat.py "$PUB/tools/"   # the Linux/Windows sound-match check (CI)
 mkdir -p "$PUB/tools" "$PUB/research"
 cp tools/*.cpp tools/*.h "$PUB/tools/"
 cp research/*.py "$PUB/research/"
@@ -24,7 +25,7 @@ cp -r docs/. "$PUB/docs/"
 for f in "$PUB"/tests/*.txt "$PUB"/tests/independent/*.txt; do sed -i -E 's#/(var/)?home/[^/ ]+/#~/#g' "$f"; done
 # the core at the exact commit this release was built with
 (cd "$CORE" && git diff --quiet && git diff --cached --quiet) || { echo "$CORE has uncommitted changes."; exit 1; }
-for d in CMakeLists.txt LICENSE README.md include src resources tests tools; do cp -r "$CORE/$d" "$PUB/external/axell-core/"; done
+for d in CMakeLists.txt LICENSE README.md cmake include src resources tests tools; do cp -r "$CORE/$d" "$PUB/external/axell-core/"; done
 rm -rf "$PUB/external/axell-core/tools/__pycache__"
 echo "axell-core $(git -C "$CORE" rev-parse --short HEAD)" > "$PUB/external/axell-core/VERSION"
 # privacy: report logs name build paths - the home folder becomes ~; then nothing personal may be left anywhere
@@ -41,7 +42,7 @@ IGN
 if [ "$UPDATE" = 1 ]; then
   git -C "$FINAL" diff --quiet && git -C "$FINAL" diff --cached --quiet || { echo "$FINAL has uncommitted changes."; exit 1; }
   git -C "$FINAL" rev-parse -q --verify "refs/tags/v$VER" >/dev/null && { echo "tag v$VER already exists in $FINAL."; exit 1; }
-  rsync -a --delete --exclude .git "$PUB/" "$FINAL/"; rm -rf "$(dirname "$PUB")"
+  rsync -a --checksum --delete --exclude .git "$PUB/" "$FINAL/"   # --checksum: a same-size change (a version number) is never skipped; rm -rf "$(dirname "$PUB")"
   cd "$FINAL"; git add -A; git commit -qm "Axell Forbidden Seal v$VER" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"; git tag "v$VER"
   echo "Public repo updated: $FINAL (tag v$VER, NOT pushed)"; exit 0
 fi

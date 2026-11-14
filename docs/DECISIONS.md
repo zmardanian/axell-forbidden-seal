@@ -155,3 +155,22 @@ the reference (weight above it at 2 of 64 points, bite at 28). Also found here: 
 AUTO 4.0: the table's estimate times a correction measured on the unguarded parts only (a guarded ess never steers the
 vowels' level); a guarded ess gets the vowels' net change exactly. Presets: DRIVE solved per preset for its squash on the
 artist's vocal; PENTODE's squash peaks at -1.37 dB (DRIVE 16) - Aggressive Lead sits there.
+
+## F20 - 4.0.1: a crash at extreme drive, and a host bug
+**Found** by pluginval built from source with AddressSanitizer: a read far outside a circuit's curve table during
+pluginval's Automation test. Reproduced in our own plugin suite only when the audio runs on its own thread while the
+host's timers answer the latency handshake (a quality switch then takes the handshake path, as in a real host).
+**Cause**: the transformer core (IRON, CONSOLE) integrates phi' = v - wc phi (1 + K (phi/phiS)^2) with an explicit
+two-stage step; its stiffness wc (1 + 3 K r^2) grows with the flux, and past T wc (1 + 3 K r^2) = 2 the step diverges.
+Driven thousands of times over full scale (DRIVE + PUNISH + INPUT + band drive), r passed ~8, the flux overflowed and
+the NaN reached Table::operator(), where (int) NaN became an index.
+**Chosen**: the flux bounded where T wc (1 + 3 K r^2) = 1 (r ~ 8 at 2x of 44.1 kHz, more at higher rates; r stays
+~2 - 3 at full DRIVE in use), and a NaN never becomes a table index (return 0; the engine's existing net then resets
+the model, a counter now proves it never happens). **Measured**: 264 renders bit-identical to 4.0.0; at the extreme
+settings 4.0.0 crashed (segfault in the independent host) and 4.0.1 plays (IRON -11.5 dBFS RMS, CONSOLE -11.3, no
+dropout). **Rejected**: an implicit (Newton) solve of the core - it would change every render, for a regime no setting
+reaches in use; a smaller flux bound - it would touch real use.
+**Also found**: pluginval crashed at exit in ~15 % of runs - in pluginval itself, JUCE's Linux VST3 host run loop
+(a raw `this` in an fd callback the event loop had already copied when an earlier callback deleted the last plugin;
+symbolized backtrace). Fixed in JUCE at configure time by axell-core (cmake/JuceFixes.cmake) for our own hosts.
+
