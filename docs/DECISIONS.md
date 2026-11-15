@@ -174,3 +174,16 @@ reaches in use; a smaller flux bound - it would touch real use.
 (a raw `this` in an fd callback the event loop had already copied when an earlier callback deleted the last plugin;
 symbolized backtrace). Fixed in JUCE at configure time by axell-core (cmake/JuceFixes.cmake) for our own hosts.
 
+
+## F21 - 4.0.2: the same sound, less work
+Part of the suite-wide optimisation campaign (profile of a 60 s vocal: oversampler 34-43 %, circuit models 16-39 %,
+curve tables 7-16 %). Rule: byte-identical output.
+- **Kept (S1):** a blend of two curve tables (TRIODE, PENTODE, DIODE) computes the table position once for both
+  (`Table::integralMix`), falling back to two lookups whenever the tables' geometry differs or the input is outside
+  the range or not a number; 1/scale stored at build. -2.3 to -2.5 % instructions; whole render DIODE -5.2 %,
+  TRIODE -3.4 %.
+- **Kept (shared core):** the sibilance detector's flatness from one log per frame (D1), inline FFT products (V1).
+- **Verified:** 268 renders vs the released 4.0.1 (every style x quality x drive, 1/3 bands, presets, ESS GUARD):
+  byte-identical.
+- **Rejected by measurement:** reusing the tape model's lookups between stages (T1: no gain), padding the oversampler
+  taps (34 % slower), AVX2 dispatch (slower at 2x-8x), FMA (changes the output), PGO (< 1 %).

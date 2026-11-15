@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.0.2 - 2026-11-15
+**Lighter, the same sound** (part of a suite-wide optimisation; the rule: byte-for-byte the same output).
+- Circuits that blend two curve tables (TRIODE, PENTODE, DIODE) find their place in the tables once instead of
+  twice; the tables keep their step. The suite's sibilance detector (ESS GUARD) takes one logarithm per frame instead
+  of 192, and the shared FFT multiplies complex numbers inline.
+- Output byte-for-byte the same as 4.0.1: 268 renders through the released 4.0.1 and the new build (every style, the
+  three qualities, drive from clean to extreme, one and three bands, all presets, ESS GUARD).
+- Whole renders of the plugin (60 s vocal, Best 8x): DIODE -5.2 %, TRIODE -3.4 %; the other styles do not blend
+  tables and are unchanged; three bands + ESS GUARD -0.3 %.
+- Verified: DSP 220 + plugin 33 checks (ASan + UBSan clean), independent audit 63/63, core 143/143, pluginval
+  strictness 10 (+10 extra runs, 0 crashes), VST3 validator 47/47.
+
 ## 4.0.1 - 2026-11-15
 A fix found by a deeper analysis (a pluginval build with AddressSanitizer, then a host-like test of our own); the
 sound is unchanged wherever 4.0.0 worked.

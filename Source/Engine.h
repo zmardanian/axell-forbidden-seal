@@ -167,6 +167,7 @@ struct Table
     std::vector<float> v;
     std::vector<double> F;   // antiderivative, F(0) = 0
     float r = 1, scale = 1, mid = 0, slopeLo = 0, slopeHi = 0;
+    double hStep = 1.0;   // 1 / scale exactly as integral() computed it per call (built once: a division saved)
     template <typename Fn>
     void build (Fn f, float range, int n, bool integral = false)
     {
@@ -179,6 +180,7 @@ struct Table
         v[(size_t) n / 2] = 0.0f;
         mid = (float) (n / 2);
         scale = (float) (n - 1) / (2.0f * r);
+        hStep = 1.0 / scale;
         slopeLo = (v[1] - v[0]) * scale;
         slopeHi = (v[(size_t) n - 1] - v[(size_t) n - 2]) * scale;
         if (integral)
@@ -222,9 +224,26 @@ struct Table
         }
         const double p = mid + x * scale;
         const int i = std::min ((int) p, n - 2);
-        const double t = p - i, h = 1.0 / scale;
+        const double t = p - i, h = hStep;
         const double a = v[(size_t) i], b = v[(size_t) i + 1];
         return F[(size_t) i] + h * (a * t + 0.5 * (b - a) * t * t);
+    }
+    // (1 - fr) A.integral (x) + fr B.integral (x), bit for bit, with the position found once: the two curves of a
+    // blend share range and size (checked; otherwise the two lookups as before)
+    static double integralMix (const Table& A, const Table& B, double fr, double x) noexcept
+    {
+        if (std::isnan (x) || x <= -A.r || x >= A.r || A.v.size() != B.v.size() || A.r != B.r || A.scale != B.scale
+            || A.mid != B.mid)
+            return (1.0 - fr) * A.integral (x) + fr * B.integral (x);
+        const int n = (int) A.v.size();
+        const double p = A.mid + x * A.scale;
+        const int i = std::min ((int) p, n - 2);
+        const double t = p - i, h = A.hStep;
+        const double a = A.v[(size_t) i], b = A.v[(size_t) i + 1];
+        const double fa = A.F[(size_t) i] + h * (a * t + 0.5 * (b - a) * t * t);
+        const double c = B.v[(size_t) i], d = B.v[(size_t) i + 1];
+        const double fb = B.F[(size_t) i] + h * (c * t + 0.5 * (d - c) * t * t);
+        return (1.0 - fr) * fa + fr * fb;
     }
 };
 
@@ -465,7 +484,7 @@ public:
         const double fr = frac;
         const double bias = biasV[(size_t) lo] + fr * (biasV[(size_t) lo + 1] - biasV[(size_t) lo]);
         auto f = [&] (double u) { return (1.0 - fr) * A ((float) u) + fr * B ((float) u); };
-        auto F = [&] (double u) { return (1.0 - fr) * A.integral (u) + fr * B.integral (u); };
+        auto F = [&] (double u) { return Table::integralMix (A, B, fr, u); };
         double& p = x1[(size_t) ch];
         double& q = F1[(size_t) ch];
         q = F (p);   // the curve may have moved (CHARACTER): restart its antiderivative from the last input
@@ -542,7 +561,7 @@ public:
         const auto& B = curves[(size_t) lo + 1];
         const double fr = frac;
         auto f = [&] (double u) { return (1.0 - fr) * A ((float) u) + fr * B ((float) u); };
-        auto F = [&] (double u) { return (1.0 - fr) * A.integral (u) + fr * B.integral (u); };
+        auto F = [&] (double u) { return Table::integralMix (A, B, fr, u); };
         double& p = x1[(size_t) ch];
         double& q = F1[(size_t) ch];
         q = F (p);
@@ -821,7 +840,7 @@ public:
         const auto& B = curves[(size_t) lo + 1];
         const double fr = frac;
         auto f = [&] (double u) { return (1.0 - fr) * A ((float) u) + fr * B ((float) u); };
-        auto F = [&] (double u) { return (1.0 - fr) * A.integral (u) + fr * B.integral (u); };
+        auto F = [&] (double u) { return Table::integralMix (A, B, fr, u); };
         double& p = x1[(size_t) ch];
         double& q = F1[(size_t) ch];
         double& d = dc[(size_t) ch];
