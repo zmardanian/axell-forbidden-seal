@@ -1,13 +1,61 @@
-# Axell Forbidden Seal (VST3, Linux + Windows)
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/hero-dark.png">
+  <img alt="Axell Forbidden Seal - Saturation from physics. Your voice never passes a circuit." src="docs/img/type/hero-light.png" width="720">
+</picture>
+</p>
 
-[![CI](https://github.com/zmardanian/axell-forbidden-seal/actions/workflows/ci.yml/badge.svg)](https://github.com/zmardanian/axell-forbidden-seal/actions/workflows/ci.yml)
-<!-- badges -->
-[![Latest release](https://img.shields.io/github/v/release/zmardanian/axell-forbidden-seal?style=flat-square&label=release&color=9c7434)](https://github.com/zmardanian/axell-forbidden-seal/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/zmardanian/axell-forbidden-seal/total?style=flat-square&color=2a1f17)](https://github.com/zmardanian/axell-forbidden-seal/releases)
-![Linux + Windows](https://img.shields.io/badge/Linux%20%2B%20Windows-x86__64-2a1f17?style=flat-square)
-![VST3](https://img.shields.io/badge/format-VST3-2a1f17?style=flat-square)
-[![Licence AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-6b5a4a?style=flat-square)](LICENSE)
-<!-- /badges -->
+<p align="center">
+  <a href="https://github.com/zmardanian/axell-forbidden-seal/releases/latest"><img src="https://img.shields.io/github/v/release/zmardanian/axell-forbidden-seal?style=flat-square&label=release&color=a42e1e" alt="latest release"></a>
+  <a href="https://github.com/zmardanian/axell-forbidden-seal/releases"><img src="https://img.shields.io/github/downloads/zmardanian/axell-forbidden-seal/total?style=flat-square&color=2a1f17" alt="downloads"></a>
+  <img src="https://img.shields.io/badge/Windows%20%C2%B7%20Linux-x86__64-2a1f17?style=flat-square" alt="Windows and Linux">
+  <a href="https://github.com/zmardanian/axell-forbidden-seal/actions/workflows/ci.yml"><img src="https://github.com/zmardanian/axell-forbidden-seal/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/licence-AGPL--3.0-6b5a4a?style=flat-square" alt="AGPL-3.0">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/seal-hidpi2x.png" alt="Axell Forbidden Seal - the katana and enso face" width="100%">
+</p>
+
+<p align="center">
+  <b>Saturation that never touches your voice - only what it adds.</b><br>
+  Eight circuits modelled from physics. In 4.0 the voice never passes a circuit: what each circuit adds is split into its squash and its new harmonics, and the harmonics are placed where they flatter a voice.
+</p>
+
+<p align="center">
+  <a href="https://github.com/zmardanian/axell-forbidden-seal/releases/latest"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/dl-windows-dark.png">
+  <img alt="Download for Windows" src="docs/img/type/dl-windows-light.png" height="58">
+</picture></a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/zmardanian/axell-forbidden-seal/releases/latest"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/dl-linux-dark.png">
+  <img alt="Download for Linux" src="docs/img/type/dl-linux-light.png" height="58">
+</picture></a>
+</p>
+
+<p align="center"><sub>Free and open source (AGPL-3.0)  ·  Windows 10 / 11 and Linux  ·  any VST3 host - FL Studio, Ableton Live, Cubase, Studio One, Bitwig, REAPER</sub></p>
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/h-why-dark.png">
+  <img alt="01 Why it's different - Colour, placed on purpose." src="docs/img/type/h-why-light.png" height="68">
+</picture>
+
+- **Decoupled saturation** - your highs stay silky, your mids never turn to a box - the voice itself is never processed.
+- **Measured against a respected tape emulation** - at equal squash: less box at 61 of 64 points, the predicted listener score matched at every point.
+- **Eight circuits from physics** - tape hysteresis, triode, push-pull pentode, console, germanium, iron, diode, fold.
+- **Esses out of the grit** - ESS GUARD keeps them clean: guarded esses at -137 dB of residue.
+- **A face like no other** - DRIVE is a katana drawn from its scabbard; the blade heats with the drive.
+
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/h-does-dark.png">
+  <img alt="02 What it does - What it does." src="docs/img/type/h-does-light.png" height="68">
+</picture>
 
 The saturation of the Axell suite: eight circuits modelled from physics, and - new in 4.0 - **decoupled saturation**:
 the voice never passes a circuit; what each circuit adds is split into its squash and its new harmonics, and the
@@ -31,19 +79,6 @@ the fizz band, into weight and bite. Your highs stay silky; your esses stay out 
 - **QUALITY** from Eco (2x) to Extreme (16x) oversampling, and **Live (4x)** with about 4 samples of latency for
   recording through it.
 
-> **Part of Axell's Dojo** - the Axell Signature suite for rap vocals, beats and masters, on Linux and Windows:
-> [Penta EQ](https://github.com/zmardanian/axell-penta-eq) ·
-> [Duo Compressor](https://github.com/zmardanian/axell-duo-compressor) ·
-> [Gate](https://github.com/zmardanian/axell-gate) · [De-Reverb](https://github.com/zmardanian/axell-dereverb) ·
-> [Velvet](https://github.com/zmardanian/axell-velvet) · [Master](https://github.com/zmardanian/axell-master) ·
-> [Space](https://github.com/zmardanian/axell-space) · **Forbidden Seal** ·
-> [Axell 76](https://github.com/zmardanian/axell-76)
-> Installed, updated and tuned to your voice by the [Axell Signature Dojo](https://github.com/zmardanian/axell-signature-dojo)
-> (one Windows installer carries the whole suite). The plugins share one core library (`external/axell-core`):
-> a breakthrough in one plugin becomes a feature of the next.
-
-![Axell Forbidden Seal](docs/screenshots/seal.png)
-
 The face (4.0): DRIVE is a katana drawn out of its scabbard - the blade heats with the drive, its temper line ripples with
 what the circuit makes; every other control is a brush ensō that closes with its value; switches are hanko seals;
 Miyamoto Musashi's painting seal 二天 (Niten) stamped over 禁, glowing with HEAT; the sections named after his five rings
@@ -52,8 +87,6 @@ mouse wheel, double-click to the default, right-click to type a value.
 
 More screens: [tape and its hysteresis loop](docs/screenshots/seal-tape.png), [triode](docs/screenshots/seal.png),
 [push-pull pentode](docs/screenshots/seal-pentode.png), [the wavefolder](docs/screenshots/seal-fold.png).
-
-## What it does
 
 **The circuits** - every model is our own design from circuit physics (references in THIRD_PARTY_NOTICES.md):
 
@@ -73,7 +106,18 @@ More screens: [tape and its hysteresis loop](docs/screenshots/seal-tape.png), [t
 AUTO. **Drive**: DRIVE, PUNISH (+20 dB), CHARACTER, DYNAMICS. A live view draws the transfer curve of the current
 style (tape draws its loop) and the harmonics it makes (even in gold, odd in red), and HEAT shows how much it adds.
 
-## Measured quality
+<table>
+<tr><td align="center" width="50%"><img src="docs/screenshots/seal-tape.png" alt="TAPE and its hysteresis loop" width="100%"><br><sub>TAPE and its hysteresis loop</sub></td><td align="center" width="50%"><img src="docs/screenshots/seal-pentode.png" alt="Push-pull PENTODE" width="100%"><br><sub>Push-pull PENTODE</sub></td></tr>
+<tr><td align="center" width="50%"><img src="docs/screenshots/seal-fold.png" alt="The wavefolder" width="100%"><br><sub>The wavefolder</sub></td><td align="center" width="50%"><img src="docs/screenshots/seal-bands.png" alt="Three BANDS" width="100%"><br><sub>Three BANDS</sub></td></tr>
+</table>
+
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/h-measured-dark.png">
+  <img alt="03 Measured - Every claim, measured." src="docs/img/type/h-measured-light.png" height="68">
+</picture>
 
 **On a real voice (4.0)** - the artist's dry vocal at the level LEARN sets, every circuit and drive, against a respected
 commercial tape-machine emulation at both its speeds, compared at **equal squash** (the vowels' dynamics):
@@ -105,20 +149,18 @@ host (the handshake waits for the host before a new latency plays). MIX 0 and ho
 Steinberg's VST3 validator 47/47; 268 renders byte-identical to 4.0.1 (4.0.2 is a speed-up: DIODE -5 %, TRIODE -3 %).
 4.0.1 fixed a crash at extreme drive with the sound unchanged (264 renders bit-identical to 4.0.0).
 
-## Install (Linux)
 
-Download `AxellForbiddenSeal-4.0.2-linux-x86_64.tar.gz` from the
-[latest release](https://github.com/zmardanian/axell-forbidden-seal/releases/latest) (optional: `sha256sum -c SHA256SUMS.txt`), then:
+<br>
 
-    tar xzf AxellForbiddenSeal-4.0.2-linux-x86_64.tar.gz
-    cd AxellForbiddenSeal-4.0.2-linux-x86_64
-    ./install.sh
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/h-install-dark.png">
+  <img alt="04 Get it - Windows first. Linux too." src="docs/img/type/h-install-light.png" height="68">
+</picture>
 
-Then in REAPER: Options > Preferences > Plug-ins > VST > Re-scan. On a vocal: press LEARN while the take plays, pick a
-style or a "Vocal:" preset, turn DRIVE to taste; ESS GUARD on for rap vocals.
+### Windows
 
-
-## Install (Windows)
+> [!TIP]
+> **The whole suite in one go:** the [Axell Signature Suite installer](https://github.com/zmardanian/axell-signature-dojo/releases/latest) puts every Axell plugin and the Dojo on Windows 10 / 11 in one step, each one optional - and the Dojo keeps them up to date. Every VST3 host loads them: FL Studio, Ableton Live, Cubase, Studio One, Bitwig, REAPER.
 
 Windows 10 / 11, 64-bit. Download `AxellForbiddenSeal-<version>-windows-x64.tar.gz` from the
 [latest release](https://github.com/zmardanian/axell-forbidden-seal/releases/latest) (optional: check it against `SHA256SUMS.txt`),
@@ -131,7 +173,72 @@ Every Windows build is made by GitHub Actions from this repository, passes the s
 (strictness 10) as the Linux build, and is checked to sound the same as it (largest difference far below -90 dBFS,
 most often bit-identical). The plugin is not code-signed yet; DAWs load it directly.
 
-## Build (Bazzite / any Linux, inside a distrobox)
+### Linux
+
+Download `AxellForbiddenSeal-4.0.2-linux-x86_64.tar.gz` from the
+[latest release](https://github.com/zmardanian/axell-forbidden-seal/releases/latest) (optional: `sha256sum -c SHA256SUMS.txt`), then:
+
+    tar xzf AxellForbiddenSeal-4.0.2-linux-x86_64.tar.gz
+    cd AxellForbiddenSeal-4.0.2-linux-x86_64
+    ./install.sh
+
+Then in REAPER: Options > Preferences > Plug-ins > VST > Re-scan. On a vocal: press LEARN while the take plays, pick a
+style or a "Vocal:" preset, turn DRIVE to taste; ESS GUARD on for rap vocals.
+
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/h-suite-dark.png">
+  <img alt="05 The suite - Nine plugins, one core." src="docs/img/type/h-suite-light.png" height="68">
+</picture>
+
+<p align="center">
+<table>
+<tr><td align="center"><a href="https://github.com/zmardanian/axell-penta-eq"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/penta-eq-dark.png">
+  <img alt="Penta EQ" src="docs/img/suite/penta-eq-light.png" width="120">
+</picture></a><br><sub>analog-matched EQ</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-duo-compressor"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/duo-compressor-dark.png">
+  <img alt="Duo Compressor" src="docs/img/suite/duo-compressor-light.png" width="120">
+</picture></a><br><sub>FET + opto + limiter</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-gate"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/gate-dark.png">
+  <img alt="Gate" src="docs/img/suite/gate-light.png" width="120">
+</picture></a><br><sub>voice-aware gate</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-dereverb"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/dereverb-dark.png">
+  <img alt="De-Reverb" src="docs/img/suite/dereverb-light.png" width="120">
+</picture></a><br><sub>small-room de-reverb</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-velvet"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/velvet-dark.png">
+  <img alt="Velvet" src="docs/img/suite/velvet-light.png" width="120">
+</picture></a><br><sub>neural de-esser + warmth</sub></td></tr>
+<tr><td align="center"><a href="https://github.com/zmardanian/axell-master"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/master-dark.png">
+  <img alt="Master" src="docs/img/suite/master-light.png" width="120">
+</picture></a><br><sub>mastering limiter</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-space"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/space-dark.png">
+  <img alt="Space" src="docs/img/suite/space-light.png" width="120">
+</picture></a><br><sub>vocal reverb + delay</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-forbidden-seal"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/forbidden-seal-dark.png">
+  <img alt="Forbidden Seal" src="docs/img/suite/forbidden-seal-light.png" width="120">
+</picture></a><br><sub>saturation</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-76"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/76-dark.png">
+  <img alt="76" src="docs/img/suite/76-light.png" width="120">
+</picture></a><br><sub>1176 FET compressor</sub></td><td align="center"><a href="https://github.com/zmardanian/axell-signature-dojo"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/suite/signature-dojo-dark.png">
+  <img alt="Signature Dojo" src="docs/img/suite/signature-dojo-light.png" width="120">
+</picture></a><br><sub>the suite's home</sub></td></tr>
+</table>
+</p>
+
+Nine plugins and their home, built as one family: they share a core library, so a breakthrough in one becomes a feature of the next - the sibilance network of Velvet guards the esses in Duo, Master, Space and Forbidden Seal; Gate's voice detector holds Duo's and Master's gain through your pauses. The [Axell Signature Dojo](https://github.com/zmardanian/axell-signature-dojo) installs, updates and tunes the whole suite to your voice - on Windows from a single installer.
+
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/h-build-dark.png">
+  <img alt="06 Build from source - For developers." src="docs/img/type/h-build-light.png" height="68">
+</picture>
 
     bash scripts/setup-toolbox.sh
     bash scripts/build.sh
@@ -142,10 +249,19 @@ The DSP lives in JUCE-free headers (`Source/Engine.h`, `Source/IirOversampler.h`
 `external/axell-core` or `../axell-core` (oversampler, sibilance network, loudness). `tools/SealCalibrate.cpp`
 measures AUTO's table, `tools/SealRender.cpp` renders files and test tones, `research/measure.py` measures every style.
 
-## Contact
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/type/h-credits-dark.png">
+  <img alt="07 Credits & contact - Credits & contact." src="docs/img/type/h-credits-light.png" height="68">
+</picture>
 
 Axell Yobag - axellpetre@protonmail.com. Issues on GitHub are welcome too.
 
 Licence: GNU AGPLv3 (`LICENSE`); third-party components and the training-data notices of the sibilance network in
 `THIRD_PARTY_NOTICES.md`. No code, data, captured responses or graphics of any commercial product are used; the
 products that inspired the feature set were studied from their public manuals and described behaviour.
+
+
+<br>
