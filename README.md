@@ -263,7 +263,7 @@ measures AUTO's table, `tools/SealRender.cpp` renders files and test tones, `res
 **Free forever, kept alive by you.** Axell Forbidden Seal costs nothing and never will - no subscriptions, no licence keys. If it has earned a place in your mixes, you can [support the Dojo on Ko-fi](https://ko-fi.com/axellyobag) - one-time or monthly, from €3.
 
 
-Axell Yobag - axellpetre@protonmail.com. Issues on GitHub are welcome too.
+Axell Yobag - contact@axellsdojo.com. Issues on GitHub are welcome too.
 
 Licence: GNU AGPLv3 (`LICENSE`); third-party components and the training-data notices of the sibilance network in
 `THIRD_PARTY_NOTICES.md`. No code, data, captured responses or graphics of any commercial product are used; the
