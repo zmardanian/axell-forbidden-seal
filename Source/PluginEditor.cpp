@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include <axell/gui/ScreenReader.h>
 
 #include <axell/gui/BrandTitle.h>
 #include "MusashiArt.h"
@@ -301,6 +302,7 @@ SealEditor::SealEditor (SealProcessor& p)
     constructed = true;
     timerCallback();
     startTimerHz (30);
+    axell::nameControlsForScreenReaders (*this);   // Narrator / VoiceOver read every control by name
 }
 
 SealEditor::~SealEditor()

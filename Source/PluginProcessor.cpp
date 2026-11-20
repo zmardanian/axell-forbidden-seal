@@ -6,6 +6,7 @@ using APVTS = juce::AudioProcessorValueTreeState;
 namespace
 {
 const juce::Identifier kPresetNameId ("presetName");
+const juce::Identifier kProgramId ("program");   // the factory preset last chosen, so hosts see the same Program after a reload
 juce::AudioParameterFloatAttributes fmt (std::function<juce::String (float)> toText)
 {
     return juce::AudioParameterFloatAttributes()
@@ -328,6 +329,7 @@ void SealProcessor::restoreTree (const juce::ValueTree& tree)
 void SealProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = stateWithName();
+    state.setProperty (kProgramId, currentProgram, nullptr);
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, destData);
 }
@@ -340,6 +342,10 @@ void SealProcessor::setStateInformation (const void* data, int sizeInBytes)
         auto tree = juce::ValueTree::fromXml (*xml);
         setPresetName (tree.getProperty (kPresetNameId, getPresetName()).toString());
         tree.removeProperty (kPresetNameId, nullptr);
+        // only the index: the parameters come from the state itself, the preset is not applied again
+        if (tree.hasProperty (kProgramId))
+            currentProgram = juce::jlimit (0, juce::jmax (0, getNumPrograms() - 1), (int) tree.getProperty (kProgramId));
+        tree.removeProperty (kProgramId, nullptr);
         restoreTree (tree);
     }
 }

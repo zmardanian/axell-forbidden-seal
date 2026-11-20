@@ -64,4 +64,4 @@ PASS  the voice untouched: a voice 60 dB down, every style, out - in (largest): 
 PASS  a steady vowel: a steady output, 20 ms frames, full band (largest): 0.001 dB (stg)
 PASS  a steady vowel: a steady output, 20 ms frames above 6 kHz (largest): 0.001 dB (stg)
 
-ALL PASS: 63 of 63 independent checks passed (79 s)
+ALL PASS: 63 of 63 independent checks passed (90 s)
