@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.0.4 - 2026-11-21
+- **Preset names are readable at full size.** The preset box in the header was 196 pixels wide, and 15 of the 24
+  factory names did not fit: they were squeezed or drawn smaller ("Ad-libs: Telephone Crunch", "Vocal: Aggressive
+  Lead"). It is now 240 pixels, using the free space before the A / B slots, and every name fits. The name also keeps a
+  clear gap before its drop-down arrow (it touched it).
+- **The sound is byte-for-byte the same as 4.0.3** (130 renders through the released 4.0.3 and the new build: every
+  factory preset and 41 random settings of every parameter, on a vocal and a mix).
+- Verified: DSP 220 + plugin 33, ASan + UBSan clean, independent audit 63/63, core 143, pluginval strictness 10,
+  VST3 validator 47/47, pluginval 2.0 real-time check 31/31.
+
 ## 4.0.3 - 2026-11-20
 - **The name in the suite's script wordmark.** The title now reads "Axell Forbidden Seal" in Great Vibes, in the plugin's own
   colour - the same wordmark as axellsdojo.com and the READMEs (SIL Open Font License; credited in THIRD_PARTY_NOTICES.md).

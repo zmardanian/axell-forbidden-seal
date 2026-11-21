@@ -7,6 +7,7 @@
 //   the latency the host compensates changes, as the plugin reported it through restartComponent)
 //   set <Param Name>=<text> | setn <Param Name>=<normalised 0..1> | at <sample> set <Param Name>=<text>
 //   input a.f32 | sidechain b.f32 | output c.f32 | run | params (list the parameters of a fresh instance)
+//   loadstate s.bin (the fresh instance gets this state before the settings) | savestate s.bin (its state after the run)
 // Command line: AuditHost plugin.vst3 job.txt [--plugin <name>]   (a bundle may hold several plugins)
 //               AuditHost plugin.vst3 --list                       (their names)
 // Each run reports the plugin's processing time ("cpu <seconds>"), for comparisons.
@@ -26,7 +27,7 @@ struct Job
     bool nonRealtime = true;
     std::vector<std::pair<String, String>> sets, setns;
     std::vector<std::tuple<int, String, String>> ats;
-    String input, side, output;
+    String input, side, output, loadState, saveState;
 };
 
 static AudioBuffer<float> readRaw (const String& path, int ch)
@@ -107,6 +108,12 @@ static void runJob (AudioPluginFormatManager& fm, const PluginDescription& desc,
         layout.inputBuses.getReference (1) = useSc ? AudioChannelSet::stereo() : AudioChannelSet::disabled();
     if (! inst->setBusesLayout (layout)) { std::fprintf (stderr, "layout refused\n"); std::exit (5); }
 
+    if (j.loadState.isNotEmpty())
+    {
+        MemoryBlock st;
+        if (! File (j.loadState).loadFileAsData (st)) { std::fprintf (stderr, "cannot read %s\n", j.loadState.toRawUTF8()); std::exit (2); }
+        inst->setStateInformation (st.getData(), (int) st.getSize());
+    }
     for (auto& [n, t] : j.sets)
         applySet (*inst, n, t, true);
     for (auto& [n, t] : j.setns)
@@ -195,6 +202,12 @@ static void runJob (AudioPluginFormatManager& fm, const PluginDescription& desc,
     std::printf ("  cpu %.6f\n", cpu);
     std::printf ("  latency %d  -> %s\n", inst->getLatencySamples(), j.output.toRawUTF8());
     std::fflush (stdout);
+    if (j.saveState.isNotEmpty())
+    {
+        MemoryBlock st;
+        inst->getStateInformation (st);
+        File (j.saveState).replaceWithData (st.getData(), st.getSize());
+    }
     inst->releaseResources();
 }
 
@@ -262,6 +275,8 @@ int main (int argc, char** argv)
         else if (key == "input") j.input = rest;
         else if (key == "sidechain") j.side = rest;
         else if (key == "output") j.output = rest;
+        else if (key == "loadstate") j.loadState = rest;
+        else if (key == "savestate") j.saveState = rest;
         else if (key == "run")
         {
             std::printf ("run %d (fs %.0f, ch %d, blocks %d..%d, %s)\n", ++runs, j.rate, j.channels, j.blockMin, j.blockMax,

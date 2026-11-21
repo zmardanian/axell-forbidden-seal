@@ -507,6 +507,7 @@ void MenuButton::paintButton (juce::Graphics& g, bool over, bool down)
     g.setFont (font (14.0f, 1));
     auto r = getLocalBounds().reduced (12, 0);
     auto arrowArea = r.removeFromRight (12).toFloat();
+    r.removeFromRight (6);   // a clear gap: a long name never runs into the chevron
     g.drawFittedText (getButtonText(), r, juce::Justification::centred, 1, 0.8f);
     juce::Path p;
     const auto c = arrowArea.getCentre();

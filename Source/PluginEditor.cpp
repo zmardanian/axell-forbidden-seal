@@ -332,7 +332,7 @@ void SealEditor::layout()
     const int m = 6, W = gui::kWidth;
     headerArea = { 0, 0, W, 34 };
     {
-        auto pb = Rectangle<int> (300, 7, 196, 20);
+        auto pb = Rectangle<int> (296, 7, 240, 20);   // 4.0.4: wide enough for every preset name (up to 25 characters)
         presetPrev.setBounds (pb.removeFromLeft (16));
         presetNext.setBounds (pb.removeFromRight (16));
         presetName.setBounds (pb.reduced (2, 0));

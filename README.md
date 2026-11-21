@@ -148,8 +148,9 @@ vowels alone - a guarded ess never steers it.
 host (the handshake waits for the host before a new latency plays). MIX 0 and host bypass give the input delayed by it.
 **CPU** (stereo, 48 kHz, Best 8x, 128-sample blocks): 3.2 - 6.3 % of one core per style; three bands + ESS GUARD 13 %.
 
-**Verified for 4.0.3**: DSP 220, plugin 33, ASan + UBSan clean, independent audit 63/63, core 143, pluginval strictness 10,
-Steinberg's VST3 validator 47/47; 268 renders byte-identical to 4.0.1 (4.0.2 is a speed-up: DIODE -5 %, TRIODE -3 %).
+**Verified for 4.0.4**: DSP 220, plugin 33, ASan + UBSan clean, independent audit 63/63, core 143, pluginval strictness 10,
+Steinberg's VST3 validator 47/47, pluginval 2.0 real-time check 31/31; 130 renders byte-identical to 4.0.3 (4.0.4 widens
+the preset box so every name fits). 268 renders byte-identical 4.0.1 -> 4.0.3 (4.0.2 is a speed-up: DIODE -5 %, TRIODE -3 %).
 4.0.1 fixed a crash at extreme drive with the sound unchanged (264 renders bit-identical to 4.0.0).
 
 
@@ -180,11 +181,11 @@ most often bit-identical). The plugin is not code-signed yet; DAWs load it direc
 
 Runs on x86_64 Linux with glibc 2.35 or newer: Ubuntu 22.04+, Debian 12+, Linux Mint 21+, Fedora 36+, Arch, Bazzite.
 
-Download `AxellForbiddenSeal-4.0.3-linux-x86_64.tar.gz` from the
+Download `AxellForbiddenSeal-4.0.4-linux-x86_64.tar.gz` from the
 [latest release](https://github.com/zmardanian/axell-forbidden-seal/releases/latest) (optional: `sha256sum -c SHA256SUMS.txt`), then:
 
-    tar xzf AxellForbiddenSeal-4.0.3-linux-x86_64.tar.gz
-    cd AxellForbiddenSeal-4.0.3-linux-x86_64
+    tar xzf AxellForbiddenSeal-4.0.4-linux-x86_64.tar.gz
+    cd AxellForbiddenSeal-4.0.4-linux-x86_64
     ./install.sh
 
 Then in REAPER: Options > Preferences > Plug-ins > VST > Re-scan. On a vocal: press LEARN while the take plays, pick a

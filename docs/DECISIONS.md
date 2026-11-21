@@ -187,3 +187,13 @@ curve tables 7-16 %). Rule: byte-identical output.
   byte-identical.
 - **Rejected by measurement:** reusing the tape model's lookups between stages (T1: no gain), padding the oversampler
   taps (34 % slower), AVX2 dispatch (slower at 2x-8x), FMA (changes the output), PGO (< 1 %).
+
+## F22 - 4.0.4: every preset name fits
+Found by the suite audit (each plugin's preset names measured in its own font, Inter SemiBold 14 px, against its
+preset box): Seal's box was 196 px for names of up to 25 characters - 10 squeezed, 5 more drawn smaller.
+- **Kept:** the box from 196 to 240 px (296..536, ending before the A / B slots at 542); text area 158 px, the
+  longest name (183 px) fits within the 80 % squeeze, the rest at full size. The shared menu button (axell-core) keeps
+  a 6 px gap before its chevron.
+- **Rejected:** a smaller font for long names - the header's other labels are 14 px, a smaller name looks broken.
+- Audio untouched: 130 renders byte-identical to 4.0.3.
+
